@@ -10,13 +10,13 @@
         </f:entry>
         
         <f:entry title="API Key" field="apiKey">
-            <f:password clazz="required"/>
+            <f:password />
         </f:entry>
-        
+
         <f:entry title="API URL" field="apiUrl">
-            <f:textbox clazz="required"/>
+            <f:textbox />
         </f:entry>
-        
+
         <f:entry title="AI Model" field="model">
             <f:textbox clazz="required"/>
         </f:entry>

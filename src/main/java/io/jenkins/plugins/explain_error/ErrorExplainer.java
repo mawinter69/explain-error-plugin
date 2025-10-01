@@ -25,7 +25,8 @@ public class ErrorExplainer {
                 return;
             }
 
-            if (config.getApiKey() == null || StringUtils.isBlank(config.getApiKey().getPlainText())) {
+            if (config.getProvider() != AIProvider.OLLAMA && (config.getApiKey() == null ||
+                StringUtils.isBlank(config.getApiKey().getPlainText()))) {
                 listener.getLogger()
                         .println("ERROR: API key is not configured. Please configure it in Jenkins global settings.");
                 return;
@@ -91,7 +92,8 @@ public class ErrorExplainer {
                 return "AI error explanation is disabled in global configuration.";
             }
 
-            if (config.getApiKey() == null || StringUtils.isBlank(config.getApiKey().getPlainText())) {
+            if (config.getProvider() != AIProvider.OLLAMA && (config.getApiKey() == null ||
+                StringUtils.isBlank(config.getApiKey().getPlainText()))) {
                 LOGGER.warning("API key is not configured");
                 return "ERROR: API key is not configured. Please configure it in Jenkins global settings.";
             }
@@ -100,7 +102,7 @@ public class ErrorExplainer {
                 LOGGER.warning("No error text provided");
                 return "No error text provided to explain.";
             }
-            
+
             // Get AI explanation
             AIService aiService = new AIService(config);
             String explanation = aiService.explainError(errorText);

@@ -16,19 +16,16 @@ public class ConsolePageDecorator extends PageDecorator {
 
     public boolean isExplainErrorEnabled() {
         GlobalConfigurationImpl config = GlobalConfigurationImpl.get();
-        
-        // Must have explanation enabled and API key
-        if (!config.isEnableExplanation() || Secret.toString(config.getApiKey()).isBlank()) {
+
+        // Must have explanation enabled. API key required for providers other than OLLAMA.
+        if (!config.isEnableExplanation()) {
             return false;
         }
-        
-        // If user has explicitly set an API URL, it must be valid
-        String rawApiUrl = config.getRawApiUrl();
-        if (rawApiUrl != null && rawApiUrl.trim().isEmpty()) {
-            // User explicitly set empty string - invalid
+
+        if (config.getProvider() != AIProvider.OLLAMA && Secret.toString(config.getApiKey()).isBlank()) {
             return false;
         }
-        
+
         // If no API URL is set, defaults will be used - that's valid
         // If API URL is set to a non-empty value, that's also valid
         return true;

@@ -10,24 +10,26 @@ import java.util.logging.Logger;
 public class AIService {
 
     private static final Logger LOGGER = Logger.getLogger(AIService.class.getName());
-    
+
     private final BaseAIService delegate;
 
     public AIService(GlobalConfigurationImpl config) {
         this.delegate = createServiceForProvider(config);
     }
-    
+
     /**
      * Create the appropriate AI service implementation based on the provider.
      */
     private BaseAIService createServiceForProvider(GlobalConfigurationImpl config) {
         AIProvider provider = config.getProvider();
-        
+
         switch (provider) {
             case OPENAI:
                 return new OpenAIService(config);
             case GEMINI:
                 return new GeminiService(config);
+            case OLLAMA:
+                return new OllamaService(config);
             default:
                 LOGGER.warning("Unknown AI provider: " + provider + ". Defaulting to OpenAI.");
                 return new OpenAIService(config);
