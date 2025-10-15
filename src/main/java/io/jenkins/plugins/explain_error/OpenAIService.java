@@ -20,13 +20,17 @@ public class OpenAIService extends BaseAIService {
 
     @Override
     protected Assistant createAssistant() {
+        String baseUrl = determineBaseUrl("OpenAI");
+        
         ChatModel model = OpenAiChatModel.builder()
+            .baseUrl(baseUrl) // Will use default if null
             .apiKey(config.getApiKey().getPlainText())
             .modelName(config.getModel())
             .temperature(0.3)
             .logRequests(LOGGER.getLevel() == Level.FINE)
             .logResponses(LOGGER.getLevel() == Level.FINE)
             .build();
+            
         return AiServices.create(Assistant.class, model);
     }
 }
