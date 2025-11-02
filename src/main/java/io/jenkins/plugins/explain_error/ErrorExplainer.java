@@ -2,8 +2,11 @@ package io.jenkins.plugins.explain_error;
 
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.util.LogTaskListener;
+import io.jenkins.plugins.explain_error.provider.BaseAIProvider;
 import java.io.IOException;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
@@ -25,10 +28,10 @@ public class ErrorExplainer {
                 return;
             }
 
-            if (config.getProvider() != AIProvider.OLLAMA && (config.getApiKey() == null ||
-                StringUtils.isBlank(config.getApiKey().getPlainText()))) {
+            BaseAIProvider provider = config.getAiProvider();
+            if (provider.isNotValid(listener)) {
                 listener.getLogger()
-                        .println("ERROR: API key is not configured. Please configure it in Jenkins global settings.");
+                        .println("ERROR: The provider is not properly configured.");
                 return;
             }
 
@@ -41,9 +44,8 @@ public class ErrorExplainer {
             }
 
             // Get AI explanation
-            AIService aiService = new AIService(config);
-            String explanation = aiService.explainError(errorLogs);
-            LOGGER.info(jobInfo + " AI error explanation succeeded.");
+            String explanation = provider.explainError(errorLogs);
+            LOGGER.fine(jobInfo + " AI error explanation succeeded.");
 
             // Store explanation in build action
             ErrorExplanationAction action = new ErrorExplanationAction(explanation, errorLogs);
@@ -88,31 +90,28 @@ public class ErrorExplainer {
             GlobalConfigurationImpl config = GlobalConfigurationImpl.get();
 
             if (!config.isEnableExplanation()) {
-                LOGGER.warning("AI error explanation is disabled in global configuration");
+                LOGGER.fine("AI error explanation is disabled in global configuration");
                 return "AI error explanation is disabled in global configuration.";
             }
 
-            if (config.getProvider() != AIProvider.OLLAMA && (config.getApiKey() == null ||
-                StringUtils.isBlank(config.getApiKey().getPlainText()))) {
-                LOGGER.warning("API key is not configured");
-                return "ERROR: API key is not configured. Please configure it in Jenkins global settings.";
+            BaseAIProvider provider = config.getAiProvider();
+            if (provider.isNotValid(new LogTaskListener(LOGGER, Level.FINE))) {
+                return "ERROR: Provider is not properly configured.";
             }
 
             if (StringUtils.isBlank(errorText)) {
-                LOGGER.warning("No error text provided");
+                LOGGER.fine("No error text provided");
                 return "No error text provided to explain.";
             }
 
             // Get AI explanation
-            AIService aiService = new AIService(config);
-            String explanation = aiService.explainError(errorText);
-            LOGGER.info(jobInfo + " AI error explanation succeeded.");
-            LOGGER.fine("Explanation length: " + (explanation != null ? explanation.length() : 0));
+            String explanation = provider.explainError(errorText);
+            LOGGER.fine(jobInfo + " AI error explanation succeeded.");
+            LOGGER.finer("Explanation length: " + (explanation != null ? explanation.length() : 0));
 
             return explanation;
         } catch (Exception e) {
-            LOGGER.severe(jobInfo + " Failed to explain error text: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, jobInfo + " Failed to explain error text: " + e.getMessage(), e);
             return "Failed to explain error: " + e.getMessage();
         }
     }

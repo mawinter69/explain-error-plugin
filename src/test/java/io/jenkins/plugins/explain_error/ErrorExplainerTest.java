@@ -6,6 +6,8 @@ import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.TaskListener;
 import hudson.util.Secret;
+import io.jenkins.plugins.explain_error.provider.OpenAIProvider;
+import io.jenkins.plugins.explain_error.provider.TestProvider;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
@@ -38,7 +40,7 @@ class ErrorExplainerTest {
 
         // Test with null API key
         config.setEnableExplanation(true);
-        config.setApiKey(null);
+        config.setAiProvider(new OpenAIProvider(null, "test-model", null));
 
         FreeStyleProject project = jenkins.createFreeStyleProject();
         FreeStyleBuild build = jenkins.buildAndAssertSuccess(project);
@@ -57,9 +59,8 @@ class ErrorExplainerTest {
 
         // Setup valid configuration
         config.setEnableExplanation(true);
-        config.setApiKey(Secret.fromString("test-api-key"));
-        config.setProvider(AIProvider.OPENAI);
-        config.setModel("gpt-3.5-turbo");
+        TestProvider provider = new TestProvider();
+        config.setAiProvider(provider);
 
         FreeStyleProject project = jenkins.createFreeStyleProject();
         FreeStyleBuild build = jenkins.buildAndAssertSuccess(project);
@@ -67,11 +68,7 @@ class ErrorExplainerTest {
         // Test with valid error text (will fail with API but should not throw exception)
         assertDoesNotThrow(() -> {
             String result = errorExplainer.explainErrorText("Build failed", build);
-            // Result should be a non-empty error message since we're using a fake API key
-            assertNotNull(result);
-            assertFalse(result.isEmpty());
-            // Should contain error message indicating communication failure
-            assertTrue(result.contains("Failed to") || result.contains("ERROR"));
+            assertEquals("Request was successful", result);
         });
 
         // Test with null input
@@ -88,6 +85,33 @@ class ErrorExplainerTest {
             // Should return error message about no error text provided
             assertNotNull(result);
             assertEquals("No error text provided to explain.", result);
+        });
+
+        // Test with empty input
+        assertDoesNotThrow(() -> {
+            String result = errorExplainer.explainErrorText("   ", build);
+            // Should return error message about no error text provided
+            assertNotNull(result);
+            assertEquals("No error text provided to explain.", result);
+        });
+
+        // Test with invalid config input
+        assertDoesNotThrow(() -> {
+            provider.setApiKey(null);
+            String result = errorExplainer.explainErrorText("", build);
+            // Should return error message about no error text provided
+            assertNotNull(result);
+            assertEquals("ERROR: Provider is not properly configured.", result);
+        });
+
+        // Test with request exception config input
+        assertDoesNotThrow(() -> {
+            provider.setApiKey(Secret.fromString("test-key"));
+            provider.setThrowError(true);
+            String result = errorExplainer.explainErrorText("Build failed", build);
+            // Should return error message about no error text provided
+            assertNotNull(result);
+            assertEquals("Failed to communicate with AI service: Request failed.", result);
         });
     }
 }

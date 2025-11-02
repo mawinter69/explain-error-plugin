@@ -3,6 +3,7 @@ package io.jenkins.plugins.explain_error;
 import static org.junit.jupiter.api.Assertions.*;
 
 import hudson.util.Secret;
+import io.jenkins.plugins.explain_error.provider.TestProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -13,6 +14,7 @@ class ConsolePageDecoratorTest {
 
     private ConsolePageDecorator decorator;
     private GlobalConfigurationImpl config;
+    private TestProvider provider;
 
     @BeforeEach
     void setUp(JenkinsRule jenkins) {
@@ -20,10 +22,9 @@ class ConsolePageDecoratorTest {
         config = GlobalConfigurationImpl.get();
 
         // Reset to default state
+        provider = new TestProvider();
         config.setEnableExplanation(true);
-        config.setApiKey(Secret.fromString("test-api-key"));
-        config.setProvider(AIProvider.OPENAI);
-        config.setModel("gpt-3.5-turbo");
+        config.setAiProvider(provider);
     }
 
     @Test
@@ -47,7 +48,7 @@ class ConsolePageDecoratorTest {
 
     @Test
     void testIsExplainErrorEnabledWithNullApiKey() {
-        config.setApiKey(null);
+        provider.setApiKey(null);
 
         // Should return false when API key is null
         assertFalse(decorator.isExplainErrorEnabled());
@@ -55,7 +56,7 @@ class ConsolePageDecoratorTest {
 
     @Test
     void testIsExplainErrorEnabledWithEmptyApiKey() {
-        config.setApiKey(Secret.fromString(""));
+        provider.setApiKey(Secret.fromString(""));
 
         // Should return false when API key is empty
         assertFalse(decorator.isExplainErrorEnabled());
@@ -63,7 +64,7 @@ class ConsolePageDecoratorTest {
 
     @Test
     void testIsExplainErrorEnabledWithBlankApiKey() {
-        config.setApiKey(Secret.fromString("   "));
+        provider.setApiKey(Secret.fromString("   "));
 
         // Should return false when API key is blank
         assertFalse(decorator.isExplainErrorEnabled());
@@ -85,25 +86,7 @@ class ConsolePageDecoratorTest {
     void testMultipleConditionsDisabled() {
         // Test when multiple conditions are not met
         config.setEnableExplanation(false);
-        config.setApiKey(null);
-
-        assertFalse(decorator.isExplainErrorEnabled());
-    }
-
-    @Test
-    void testPartiallyValidConfig() {
-        // Test with some valid and some invalid settings
-        config.setEnableExplanation(true);
-        config.setApiKey(null);
-
-        assertFalse(decorator.isExplainErrorEnabled());
-    }
-
-    @Test
-    void testAnotherPartiallyValidConfig() {
-        // Test with different combination
-        config.setEnableExplanation(true);
-        config.setApiKey(Secret.fromString("")); // Invalid key
+        provider.setApiKey(null);
 
         assertFalse(decorator.isExplainErrorEnabled());
     }
@@ -119,17 +102,17 @@ class ConsolePageDecoratorTest {
         config.setEnableExplanation(true);
         assertTrue(decorator.isExplainErrorEnabled());
 
-        config.setApiKey(null);
+        provider.setApiKey(null);
         assertFalse(decorator.isExplainErrorEnabled());
     }
 
     @Test
     void testEdgeCaseApiKey() {
         // Test with various edge cases for API key
-        config.setApiKey(Secret.fromString("a")); // Very short key
+        provider.setApiKey(Secret.fromString("a")); // Very short key
         assertTrue(decorator.isExplainErrorEnabled()); // Should still work, validation is elsewhere
 
-        config.setApiKey(Secret.fromString("\t\n\r ")); // Whitespace only
+        provider.setApiKey(Secret.fromString("\t\n\r ")); // Whitespace only
         assertFalse(decorator.isExplainErrorEnabled());
     }
 

@@ -2,7 +2,6 @@ package io.jenkins.plugins.explain_error;
 
 import hudson.Extension;
 import hudson.model.PageDecorator;
-import hudson.util.Secret;
 
 /**
  * Page decorator to add "Explain Error" functionality to console output pages.
@@ -22,13 +21,7 @@ public class ConsolePageDecorator extends PageDecorator {
             return false;
         }
 
-        if (config.getProvider() != AIProvider.OLLAMA && Secret.toString(config.getApiKey()).isBlank()) {
-            return false;
-        }
-
-        // If no API URL is set, defaults will be used - that's valid
-        // If API URL is set to a non-empty value, that's also valid
-        return true;
+        return !config.getAiProvider().isNotValid(null);
     }
     
     /**

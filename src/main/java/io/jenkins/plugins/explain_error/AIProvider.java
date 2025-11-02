@@ -2,7 +2,9 @@ package io.jenkins.plugins.explain_error;
 
 /**
  * Enum representing the supported AI providers.
+ * @deprecated in favour of {@link io.jenkins.plugins.explain_error.provider.BaseAIProvider}
  */
+@Deprecated
 public enum AIProvider {
     OPENAI("OpenAI", "gpt-4"),
     GEMINI("Google Gemini", "gemini-2.0-flash"),
@@ -22,10 +24,5 @@ public enum AIProvider {
 
     public String getDefaultModel() {
         return defaultModel;
-    }
-
-    @Override
-    public String toString() {
-        return displayName;
     }
 }
