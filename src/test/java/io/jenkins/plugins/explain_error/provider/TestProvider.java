@@ -1,9 +1,9 @@
 package io.jenkins.plugins.explain_error.provider;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.Extension;
 import hudson.util.Secret;
 import org.jenkinsci.Symbol;
-import org.jvnet.hudson.test.TestExtension;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class TestProvider extends OpenAIProvider {
@@ -40,7 +40,7 @@ public class TestProvider extends OpenAIProvider {
         this.model = model;
     }
 
-    @TestExtension
+    @Extension
     @Symbol("test")
     public static class DescriptorImpl extends BaseProviderDescriptor {
 

@@ -23,7 +23,10 @@ public class ConsolePageDecorator extends PageDecorator {
 
         return !config.getAiProvider().isNotValid(null);
     }
-    
+
+    public String getProviderName() {
+        return GlobalConfigurationImpl.get().getAiProvider().getProviderName();
+    }
     /**
      * Helper method for JavaScript to check if a build is completed.
      * Returns true if the plugin is enabled (for JavaScript inclusion),

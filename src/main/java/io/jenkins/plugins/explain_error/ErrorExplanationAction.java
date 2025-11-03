@@ -11,12 +11,14 @@ public class ErrorExplanationAction implements RunAction2 {
     private final String explanation;
     private final String originalErrorLogs;
     private final long timestamp;
+    private final String providerName;
     private transient Run<?, ?> run;
 
-    public ErrorExplanationAction(String explanation, String originalErrorLogs) {
+    public ErrorExplanationAction(String explanation, String originalErrorLogs, String providerName) {
         this.explanation = explanation;
         this.originalErrorLogs = originalErrorLogs;
         this.timestamp = System.currentTimeMillis();
+        this.providerName = providerName;
     }
 
     @Override
@@ -26,7 +28,7 @@ public class ErrorExplanationAction implements RunAction2 {
 
     @Override
     public String getDisplayName() {
-        return "AI Error Explanation";
+        return "AI Error Explanation (" + providerName + ")";
     }
 
     @Override

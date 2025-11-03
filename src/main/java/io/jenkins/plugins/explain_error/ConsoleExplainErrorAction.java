@@ -75,9 +75,9 @@ public class ConsoleExplainErrorAction implements Action {
             ErrorExplainer explainer = new ErrorExplainer();
             String explanation = explainer.explainErrorText(errorText, run);
 
-            if (explanation != null && !explanation.trim().isEmpty()) {
+            if (explanation != null && !explanation.isBlank()) {
                 // Save the explanation as a build action (like the sidebar functionality)
-                ErrorExplanationAction action = new ErrorExplanationAction(explanation, errorText);
+                ErrorExplanationAction action = new ErrorExplanationAction(explanation, errorText, explainer.getProviderName());
                 run.addOrReplaceAction(action);
 
                 writeJsonResponse(rsp, explanation);

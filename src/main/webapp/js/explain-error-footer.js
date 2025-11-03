@@ -106,11 +106,16 @@ function addExplainErrorButton() {
     return;
   }
 
-  const explainBtn = createButton('Explain Error', 'jenkins-button explain-error-btn', explainConsoleError);
+  const container = document.getElementById('explain-error-container');
+  const providerName = container.dataset.providerName;
+
+  const explainBtn = createButton('Explain Error', 'jenkins-button explain-error-btn', explainConsoleError, providerName);
 
   // If we found the button container, add our button there
   if (buttonContainer) {
     buttonContainer.insertBefore(explainBtn, buttonContainer.firstChild);
+    Behaviour.applySubtree(buttonContainer, true);
+
   } else if (consoleButtonBar) {
     consoleButtonBar.appendChild(explainBtn);
   } else {
@@ -123,11 +128,12 @@ function addExplainErrorButton() {
   }
 }
 
-function createButton(text, className, onClick) {
+function createButton(text, className, onClick, providerName) {
   const btn = document.createElement('button');
   btn.textContent = text;
   btn.className = className;
   btn.onclick = onClick;
+  btn.setAttribute("tooltip", "Provider: " + providerName);
   return btn;
 }
 

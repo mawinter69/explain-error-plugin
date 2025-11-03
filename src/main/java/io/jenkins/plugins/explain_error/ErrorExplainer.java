@@ -16,7 +16,12 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class ErrorExplainer {
 
+    private String providerName;
     private static final Logger LOGGER = Logger.getLogger(ErrorExplainer.class.getName());
+
+    public String getProviderName() {
+        return providerName;
+    }
 
     public void explainError(Run<?, ?> run, TaskListener listener, String logPattern, int maxLines) {
         String jobInfo = run != null ? ("[" + run.getParent().getFullName() + " #" + run.getNumber() + "]") : "[unknown]";
@@ -48,7 +53,7 @@ public class ErrorExplainer {
             LOGGER.fine(jobInfo + " AI error explanation succeeded.");
 
             // Store explanation in build action
-            ErrorExplanationAction action = new ErrorExplanationAction(explanation, errorLogs);
+            ErrorExplanationAction action = new ErrorExplanationAction(explanation, errorLogs, provider.getProviderName());
             run.addOrReplaceAction(action);
 
             // Explanation is now available on the job page, no need to clutter console output
@@ -108,6 +113,7 @@ public class ErrorExplainer {
             String explanation = provider.explainError(errorText);
             LOGGER.fine(jobInfo + " AI error explanation succeeded.");
             LOGGER.finer("Explanation length: " + (explanation != null ? explanation.length() : 0));
+            this.providerName = provider.getProviderName();
 
             return explanation;
         } catch (Exception e) {

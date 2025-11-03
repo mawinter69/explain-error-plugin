@@ -102,6 +102,10 @@ public abstract class BaseAIProvider extends AbstractDescribableImpl<BaseAIProvi
         String chat(String message);
     }
 
+    public String getProviderName() {
+        return getDescriptor().getDisplayName();
+    }
+
     public abstract static class BaseProviderDescriptor extends Descriptor<BaseAIProvider> {
         public abstract String getDefaultModel();
 

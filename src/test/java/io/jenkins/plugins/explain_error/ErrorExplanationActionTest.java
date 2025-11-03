@@ -20,7 +20,7 @@ class ErrorExplanationActionTest {
     void setUp() {
         testExplanation = "This is a test explanation of the error";
         testErrorLogs = "ERROR: Build failed\nFAILED: Compilation error";
-        action = new ErrorExplanationAction(testExplanation, testErrorLogs);
+        action = new ErrorExplanationAction(testExplanation, testErrorLogs, "Ollama");
     }
 
     @Test
@@ -39,7 +39,7 @@ class ErrorExplanationActionTest {
 
     @Test
     void testGetDisplayName() {
-        assertEquals("AI Error Explanation", action.getDisplayName());
+        assertEquals("AI Error Explanation (Ollama)", action.getDisplayName());
     }
 
     @Test
@@ -89,21 +89,21 @@ class ErrorExplanationActionTest {
 
     @Test
     void testWithNullExplanation() {
-        ErrorExplanationAction nullAction = new ErrorExplanationAction(null, testErrorLogs);
+        ErrorExplanationAction nullAction = new ErrorExplanationAction(null, testErrorLogs, "Ollama");
         assertNull(nullAction.getExplanation());
         assertEquals(testErrorLogs, nullAction.getOriginalErrorLogs());
     }
 
     @Test
     void testWithNullErrorLogs() {
-        ErrorExplanationAction nullAction = new ErrorExplanationAction(testExplanation, null);
+        ErrorExplanationAction nullAction = new ErrorExplanationAction(testExplanation, null, "Ollama");
         assertEquals(testExplanation, nullAction.getExplanation());
         assertNull(nullAction.getOriginalErrorLogs());
     }
 
     @Test
     void testWithEmptyStrings() {
-        ErrorExplanationAction emptyAction = new ErrorExplanationAction("", "");
+        ErrorExplanationAction emptyAction = new ErrorExplanationAction("", "", "Ollama");
         assertEquals("", emptyAction.getExplanation());
         assertEquals("", emptyAction.getOriginalErrorLogs());
     }
@@ -115,7 +115,7 @@ class ErrorExplanationActionTest {
             longExplanation.append("This is line ").append(i).append(" of a very long explanation.\n");
         }
 
-        ErrorExplanationAction longAction = new ErrorExplanationAction(longExplanation.toString(), testErrorLogs);
+        ErrorExplanationAction longAction = new ErrorExplanationAction(longExplanation.toString(), testErrorLogs, "Ollama");
         assertEquals(longExplanation.toString(), longAction.getExplanation());
     }
 
@@ -124,7 +124,7 @@ class ErrorExplanationActionTest {
         String specialExplanation = "Error with special chars: <>&\"'\nUnicode: ñáéíóú 中文 العربية";
         String specialErrorLogs = "ERROR: File 'test@#$%^&*().txt' not found";
 
-        ErrorExplanationAction specialAction = new ErrorExplanationAction(specialExplanation, specialErrorLogs);
+        ErrorExplanationAction specialAction = new ErrorExplanationAction(specialExplanation, specialErrorLogs, "Ollama");
         assertEquals(specialExplanation, specialAction.getExplanation());
         assertEquals(specialErrorLogs, specialAction.getOriginalErrorLogs());
     }
@@ -134,7 +134,7 @@ class ErrorExplanationActionTest {
         long beforeCreation = System.currentTimeMillis();
         Thread.sleep(10); // Small delay to ensure timestamp difference
 
-        ErrorExplanationAction timedAction = new ErrorExplanationAction("test", "test");
+        ErrorExplanationAction timedAction = new ErrorExplanationAction("test", "test", "Ollama");
 
         Thread.sleep(10); // Small delay to ensure timestamp difference
         long afterCreation = System.currentTimeMillis();
@@ -147,27 +147,27 @@ class ErrorExplanationActionTest {
     @Test
     void testHasValidExplanation() {
         // Test with valid explanation
-        ErrorExplanationAction validAction = new ErrorExplanationAction("Valid explanation", "Error logs");
+        ErrorExplanationAction validAction = new ErrorExplanationAction("Valid explanation", "Error logs", "Ollama");
         assertTrue(validAction.hasValidExplanation());
 
         // Test with null explanation
-        ErrorExplanationAction nullAction = new ErrorExplanationAction(null, "Error logs");
+        ErrorExplanationAction nullAction = new ErrorExplanationAction(null, "Error logs", "Ollama");
         assertFalse(nullAction.hasValidExplanation());
 
         // Test with empty explanation
-        ErrorExplanationAction emptyAction = new ErrorExplanationAction("", "Error logs");
+        ErrorExplanationAction emptyAction = new ErrorExplanationAction("", "Error logs", "Ollama");
         assertFalse(emptyAction.hasValidExplanation());
 
         // Test with whitespace-only explanation
-        ErrorExplanationAction whitespaceAction = new ErrorExplanationAction("   \n  \t  ", "Error logs");
+        ErrorExplanationAction whitespaceAction = new ErrorExplanationAction("   \n  \t  ", "Error logs", "Ollama");
         assertFalse(whitespaceAction.hasValidExplanation());
 
         // Test with explanation containing only spaces
-        ErrorExplanationAction spacesAction = new ErrorExplanationAction("     ", "Error logs");
+        ErrorExplanationAction spacesAction = new ErrorExplanationAction("     ", "Error logs", "Ollama");
         assertFalse(spacesAction.hasValidExplanation());
 
         // Test with valid explanation containing whitespace
-        ErrorExplanationAction validWithWhitespaceAction = new ErrorExplanationAction("  Valid explanation  ", "Error logs");
+        ErrorExplanationAction validWithWhitespaceAction = new ErrorExplanationAction("  Valid explanation  ", "Error logs", "Ollama");
         assertTrue(validWithWhitespaceAction.hasValidExplanation());
     }
 }
