@@ -71,8 +71,8 @@ public class OllamaProvider extends BaseAIProvider {
             return "gemma3:1b";
         }
 
-        // lgtm[jenkins/no-permission-check]
         @POST
+        @SuppressWarnings("lgtm[jenkins/no-permission-check]")
         public FormValidation doCheckUrl(@QueryParameter String value) {
             if (value == null || value.isBlank()) {
                 return FormValidation.error("URL is required.");

@@ -86,8 +86,8 @@ public class OpenAIProvider extends BaseAIProvider {
             return "gpt-4";
         }
 
-        // lgtm[jenkins/no-permission-check]
         @POST
+        @SuppressWarnings("lgtm[jenkins/no-permission-check]")
         public AutoCompletionCandidates doAutoCompleteModel(@QueryParameter String value) {
             AutoCompletionCandidates c = new AutoCompletionCandidates();
             for (String model : MODELS) {
