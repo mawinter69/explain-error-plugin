@@ -132,10 +132,4 @@ public class GlobalConfigurationImpl extends GlobalConfiguration {
     public String getDisplayName() {
         return "Explain Error Plugin Configuration";
     }
-
-    @NonNull
-    @Override
-    public Permission getRequiredGlobalConfigPagePermission() {
-        return Jenkins.MANAGE;
-    }
 }

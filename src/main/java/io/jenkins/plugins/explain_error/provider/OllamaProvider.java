@@ -89,8 +89,7 @@ public class OllamaProvider extends BaseAIProvider {
         @POST
         public FormValidation doTestConfiguration(@QueryParameter("url") String url,
                                                   @QueryParameter("model") String model) {
-            Jenkins.get().checkPermission(Jenkins.MANAGE);
-
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
 
             try {
                 OllamaProvider provider = new OllamaProvider(url, model);
