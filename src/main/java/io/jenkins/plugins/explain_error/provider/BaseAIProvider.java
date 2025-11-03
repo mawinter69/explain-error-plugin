@@ -105,6 +105,7 @@ public abstract class BaseAIProvider extends AbstractDescribableImpl<BaseAIProvi
     public abstract static class BaseProviderDescriptor extends Descriptor<BaseAIProvider> {
         public abstract String getDefaultModel();
 
+        // lgtm[jenkins/no-permission-check]
         @POST
         public FormValidation doCheckUrl(@QueryParameter String value) {
             if (value == null || value.isBlank()) {

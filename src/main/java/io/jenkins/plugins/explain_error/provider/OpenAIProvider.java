@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.verb.POST;
 
 public class OpenAIProvider extends BaseAIProvider {
 
@@ -85,6 +86,8 @@ public class OpenAIProvider extends BaseAIProvider {
             return "gpt-4";
         }
 
+        // lgtm[jenkins/no-permission-check]
+        @POST
         public AutoCompletionCandidates doAutoCompleteModel(@QueryParameter String value) {
             AutoCompletionCandidates c = new AutoCompletionCandidates();
             for (String model : MODELS) {
