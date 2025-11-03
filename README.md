@@ -91,32 +91,36 @@ This plugin supports [Configuration as Code](https://plugins.jenkins.io/configur
 ```yaml
 unclassified:
   explainError:
-    enableExplanation: true
-    provider: "OPENAI"
-    apiKey: "${AI_API_KEY}"
-    model: "gpt-4"
-    # apiUrl: "" # Optional, leave empty for default
+    aiProvider:
+      gemini:
+        apiKey: "${AI_API_KEY}"
+        model: "gpt-1"
+        # url: "" # Optional, leave empty for default
+    enableExplanation: true```
 ```
 
 **Google Gemini Configuration:**
 ```yaml
 unclassified:
   explainError:
-    enableExplanation: true
-    provider: "GEMINI"
-    apiKey: "${AI_API_KEY}"
-    model: "gemini-2.0-flash"
-    # apiUrl: "" # Optional, leave empty for default
+    aiProvider:
+      gemini:
+        apiKey: "${AI_API_KEY}"
+        model: "gemini-2.5-flash"
+        # url: "" # Optional, leave empty for default
+    enableExplanation: true```
+    
 ```
 
 **Ollama Configuration:**
 ```yaml
 unclassified:
   explainError:
+    aiProvider:
+      ollama:
+        model: "gemma3:1b"
+        url: "http://localhost:11434"
     enableExplanation: true
-    provider: "OLLAMA"
-    apiUrl: "http://localhost:11434"
-    model: "gemma3:1b" # gpt-oss, deepseek-r1, etc
 ```
 
 **Environment Variable Example:**

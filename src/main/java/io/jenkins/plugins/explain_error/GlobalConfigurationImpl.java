@@ -32,7 +32,7 @@ import java.util.logging.Logger;
 public class GlobalConfigurationImpl extends GlobalConfiguration {
 
     private transient Secret apiKey;
-    private transient AIProvider provider = AIProvider.OPENAI;
+    private transient AIProvider provider;
     private transient String apiUrl;
     private transient String model;
     private boolean enableExplanation = true;
@@ -65,6 +65,9 @@ public class GlobalConfigurationImpl extends GlobalConfiguration {
 
     // Getters and setters
     public BaseAIProvider getAiProvider() {
+        if (aiProvider == null) {
+            readResolve();
+        }
         return aiProvider;
     }
 
@@ -83,7 +86,7 @@ public class GlobalConfigurationImpl extends GlobalConfiguration {
     }
 
     public AIProvider getProvider() {
-        return provider != null ? provider : AIProvider.OPENAI;
+        return provider;
     }
 
     @DataBoundSetter

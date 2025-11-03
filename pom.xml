@@ -24,7 +24,6 @@
     <jenkins.version>${jenkins.baseline}.3</jenkins.version>
     <langchain4j.version>1.4.0</langchain4j.version>
     <ban-junit4-imports.skip>false</ban-junit4-imports.skip>
-    <hpi.compatibleSinceVersion>89</hpi.compatibleSinceVersion>
   </properties>
 
   <name>Explain Error Plugin</name>
