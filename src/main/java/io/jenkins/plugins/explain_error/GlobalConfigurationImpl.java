@@ -1,7 +1,9 @@
 package io.jenkins.plugins.explain_error;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Descriptor;
+import hudson.security.Permission;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.util.Secret;
@@ -126,5 +128,11 @@ public class GlobalConfigurationImpl extends GlobalConfiguration {
     @Override
     public String getDisplayName() {
         return "Explain Error Plugin Configuration";
+    }
+
+    @NonNull
+    @Override
+    public Permission getRequiredGlobalConfigPagePermission() {
+        return Jenkins.MANAGE;
     }
 }

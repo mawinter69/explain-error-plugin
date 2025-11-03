@@ -10,6 +10,7 @@ import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -17,6 +18,7 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jenkins.model.Jenkins;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -78,6 +80,39 @@ public class OllamaProvider extends BaseAIProvider {
                 return FormValidation.error("URL is required.");
             }
             return super.doCheckUrl(value);
+        }
+
+        /**
+         * Method to test the AI API configuration.
+         * This is called when the "Test Configuration" button is clicked.
+         */
+        @POST
+        public FormValidation doTestConfiguration(@QueryParameter("url") String url,
+                                                  @QueryParameter("model") String model) {
+            Jenkins.get().checkPermission(Jenkins.MANAGE);
+
+
+            try {
+                OllamaProvider provider = new OllamaProvider(url, model);
+                String testResponse = provider.explainError("Send 'Configuration test successful' to me.");
+
+                if (testResponse != null && testResponse.contains("Configuration test successful")) {
+                    return FormValidation.ok("Configuration test successful! API connection is working properly.");
+                } else if (testResponse != null && testResponse.contains("AI API Error:")) {
+                    return FormValidation.error("" + testResponse);
+                } else if (testResponse != null && testResponse.contains("Failed to get explanation from AI service")) {
+                    return FormValidation.error("" + testResponse);
+                } else if (testResponse != null && testResponse.contains("Unable to create assistant")) {
+                    return FormValidation.error("" + testResponse);
+                } else {
+                    return FormValidation.error("Connection failed: No valid response received from AI service.");
+                }
+
+            } catch (IOException e) {
+                return FormValidation.error("Connection failed: " + e.getMessage() + ". Please check your API URL and network connection.");
+            } catch (Exception e) {
+                return FormValidation.error("Test failed: " + e.getMessage());
+            }
         }
     }
 }

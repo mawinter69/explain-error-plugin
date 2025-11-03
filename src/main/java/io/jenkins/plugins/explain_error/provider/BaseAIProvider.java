@@ -8,6 +8,7 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.TaskListener;
 import hudson.util.FormValidation;
+import hudson.util.Secret;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -16,6 +17,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
+import jenkins.model.Jenkins;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.verb.POST;
@@ -129,6 +131,5 @@ public abstract class BaseAIProvider extends AbstractDescribableImpl<BaseAIProvi
             }
             return FormValidation.ok();
         }
-
     }
 }
