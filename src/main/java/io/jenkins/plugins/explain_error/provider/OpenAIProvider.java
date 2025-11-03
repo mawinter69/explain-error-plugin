@@ -18,6 +18,7 @@ import jenkins.model.Jenkins;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.verb.GET;
 import org.kohsuke.stapler.verb.POST;
 
 public class OpenAIProvider extends BaseAIProvider {
@@ -86,10 +87,10 @@ public class OpenAIProvider extends BaseAIProvider {
         }
 
         public String getDefaultModel() {
-            return "gpt-4";
+            return "gpt-4.1";
         }
 
-        @POST
+        @GET
         @SuppressWarnings("lgtm[jenkins/no-permission-check]")
         public AutoCompletionCandidates doAutoCompleteModel(@QueryParameter String value) {
             AutoCompletionCandidates c = new AutoCompletionCandidates();

@@ -94,7 +94,7 @@ unclassified:
     aiProvider:
       gemini:
         apiKey: "${AI_API_KEY}"
-        model: "gpt-1"
+        model: "gpt-5"
         # url: "" # Optional, leave empty for default
     enableExplanation: true```
 ```
