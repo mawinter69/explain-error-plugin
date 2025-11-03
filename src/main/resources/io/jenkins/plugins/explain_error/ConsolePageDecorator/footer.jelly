@@ -18,13 +18,13 @@
             <p>An AI explanation was already generated on <span id="existing-explanation-timestamp"></span>.</p>
             <p>Do you want to view the existing explanation or generate a new one?</p>
             <div class="jenkins-button-bar">
-              <button type="button" class="jenkins-button jenkins-button--primary jenkins-!-margin-1" onclick="viewExistingExplanation()">
+              <button type="button" class="jenkins-button jenkins-button--primary jenkins-!-margin-1 eep-view-existing-button">
                 View Existing
               </button>
-              <button type="button" class="jenkins-button jenkins-!-margin-1" tooltip="Provider: ${it.providerName}" onclick="generateNewExplanation()">
+              <button type="button" class="jenkins-button jenkins-!-margin-1 eep-generate-new-button" tooltip="Provider: ${it.providerName}">
                 Generate New
               </button>
-              <button type="button" class="jenkins-button jenkins-!-margin-1" onclick="cancelExplanation()">
+              <button type="button" class="jenkins-button jenkins-!-margin-1 eep-cancel-button">
                 Cancel
               </button>
             </div>

@@ -186,16 +186,29 @@ function showConfirmationDialog(timestamp) {
   hideContainer();
 }
 
+Behaviour.specify(".eep-view-existing-button", "ExplainErrorView", 0, function(e) {
+  e.onclick = viewExistingExplanation;
+});
+
+
 function viewExistingExplanation() {
   hideConfirmationDialog();
   sendExplainRequest(false); // This will return the cached result
 }
+
+Behaviour.specify(".eep-generate-new-button", "ExplainErrorView", 0, function(e) {
+  e.onclick = generateNewExplanation;
+});
 
 function generateNewExplanation() {
   hideConfirmationDialog();
   clearExplanationContent();
   sendExplainRequest(true); // Force new explanation
 }
+
+Behaviour.specify(".eep-cancel-button", "ExplainErrorView", 0, function(e) {
+  e.onclick = cancelExplanation;
+});
 
 function cancelExplanation() {
   hideConfirmationDialog();
