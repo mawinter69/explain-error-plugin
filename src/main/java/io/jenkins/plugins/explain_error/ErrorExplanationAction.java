@@ -75,6 +75,6 @@ public class ErrorExplanationAction implements RunAction2 {
      * @return true if explanation is not null, not empty, and not just whitespace
      */
     public boolean hasValidExplanation() {
-        return explanation != null && !explanation.trim().isEmpty();
+        return explanation != null && !explanation.isBlank();
     }
 }

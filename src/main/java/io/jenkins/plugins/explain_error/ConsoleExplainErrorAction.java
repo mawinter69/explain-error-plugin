@@ -1,6 +1,7 @@
 package io.jenkins.plugins.explain_error;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import hudson.model.Action;
 import hudson.model.Result;
 import hudson.model.Run;
@@ -178,7 +179,8 @@ public class ConsoleExplainErrorAction implements Action {
      * @param explanation The cached explanation
      * @return The response string with cached indicator
      */
-    private String createCachedResponse(String explanation) {
+    @VisibleForTesting
+    String createCachedResponse(String explanation) {
         return explanation + "\n\n[Note: This is a previously generated explanation. Use the 'Generate New' option to create a new one.]";
     }
 

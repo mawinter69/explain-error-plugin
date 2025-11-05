@@ -9,6 +9,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class TestProvider extends OpenAIProvider {
 
     private boolean throwError = false;
+    private String answerMessage = "Request was successful";
+    private int callCount = 0;
 
     @DataBoundConstructor
     public TestProvider() {
@@ -23,7 +25,8 @@ public class TestProvider extends OpenAIProvider {
                 if (throwError) {
                     throw new RuntimeException("Request failed.");
                 }
-                return "Request was successful";
+                callCount++;
+                return answerMessage;
             }
         };
     }
@@ -38,6 +41,14 @@ public class TestProvider extends OpenAIProvider {
 
     public void setModel(String model) {
         this.model = model;
+    }
+
+    public void setAnswerMessage(String answerMessage) {
+        this.answerMessage = answerMessage;
+    }
+
+    public int getCallCount() {
+        return callCount;
     }
 
     @Extension
