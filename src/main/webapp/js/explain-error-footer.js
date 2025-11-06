@@ -241,29 +241,41 @@ function sendExplainRequest(forceNew = false) {
     if (!response.ok) {
       notificationBar.show('Explain failed', notificationBar.ERROR);
     }
-    return response.text();
+    return response.json();
   })
-  .then(responseText => {
+  .then(json => {
     try {
-      const jsonResponse = JSON.parse(responseText);
-      showErrorExplanation(jsonResponse);
+      if (json.status == "success") {
+        showErrorExplanation(json.message, json.providerName);
+      }
+      else {
+        if (json.status == "warning") {
+          notificationBar.show(json.message, notificationBar.WARNING);
+        }
+        else {
+          notificationBar.show(json.message, notificationBar.ERROR);
+        }
+        hideContainer();
+      }
     } catch (e) {
-      showErrorExplanation(responseText);
+      notificationBar.show(`Error: ${error.message}`, notificationBar.ERROR);
     }
   })
   .catch(error => {
-    showErrorExplanation(`Error: ${error.message}`);
+    notificationBar.show(`Error: ${error.message}`, notificationBar.ERROR);
   });
 }
 
-function showErrorExplanation(message) {
+function showErrorExplanation(message, providerName) {
   const container = document.getElementById('explain-error-container');
   const spinner = document.getElementById('explain-error-spinner');
   const content = document.getElementById('explain-error-content');
-
+  const cardTitle = document.querySelector('.jenkins-card__title');
+  cardTitle.firstChild.textContent = `AI Error Explanation (${providerName})`;
   container.classList.remove('jenkins-hidden');
   spinner.classList.add('jenkins-hidden');
   content.textContent = message;
+  content.classList.remove('jenkins-hidden');
 }
 
 function showSpinner() {

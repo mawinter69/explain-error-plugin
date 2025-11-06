@@ -9,6 +9,7 @@ import hudson.model.Descriptor;
 import hudson.model.TaskListener;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+import io.jenkins.plugins.explain_error.ExplanationException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -52,21 +53,21 @@ public abstract class BaseAIProvider extends AbstractDescribableImpl<BaseAIProvi
      * @return the AI explanation
      * @throws IOException if there's a communication error
      */
-    public final String explainError(String errorLogs) throws IOException {
+    public final String explainError(String errorLogs, TaskListener listener) throws ExplanationException {
         Assistant assistant;
 
         if (StringUtils.isBlank(errorLogs)) {
-            return "No error logs provided for explanation.";
+            throw new ExplanationException("warning", "No error logs provided for explanation.");
         }
 
-        if (isNotValid(null)) {
-            return "Configuration is not valid.";
+        if (isNotValid(listener)) {
+            throw new ExplanationException("error", "The provider is not properly configured.");
         }
 
         try {
             assistant = createAssistant();
         } catch (Exception e) {
-            return "Unable to create assistant api-key or model is invalid.";
+            throw new ExplanationException("error", "Failed to create assistant", e);
         }
 
         // Use PromptTemplate for dynamic prompt creation
@@ -91,7 +92,7 @@ public abstract class BaseAIProvider extends AbstractDescribableImpl<BaseAIProvi
             return assistant.chat(prompt.text());
         } catch (Exception e) {
             LOGGER.severe("AI API request failed: " + e.getMessage());
-            return "Failed to communicate with AI service: " + e.getMessage();
+            throw new ExplanationException("error", "API request failed: " + e.getMessage(), e);
         }
     }
 

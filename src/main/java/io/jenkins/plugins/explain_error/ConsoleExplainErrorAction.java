@@ -1,6 +1,5 @@
 package io.jenkins.plugins.explain_error;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import hudson.model.Action;
 import hudson.model.Result;
@@ -9,6 +8,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.logging.Logger;
 import javax.servlet.ServletException;
+import net.sf.json.JSONObject;
 import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.StaplerResponse2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
@@ -47,9 +47,15 @@ public class ConsoleExplainErrorAction implements Action {
      * Called via JavaScript from the console output page.
      */
     @RequirePOST
-    public void doExplainConsoleError(StaplerRequest2 req, StaplerResponse2 rsp) throws ServletException, IOException {
+    public void doExplainConsoleError(StaplerRequest2 req, StaplerResponse2 rsp) throws IOException {
         try {
             run.checkPermission(hudson.model.Item.READ);
+
+            GlobalConfigurationImpl config = GlobalConfigurationImpl.get();
+            if (!config.isEnableExplanation()) {
+                writeJsonResponse(rsp, "warning", "Unkown" , "AI error explanation is disabled in global configuration.");
+                return;
+            }
 
             // Check if user wants to force a new explanation
             boolean forceNew = "true".equals(req.getParameter("forceNew"));
@@ -58,7 +64,7 @@ public class ConsoleExplainErrorAction implements Action {
             ErrorExplanationAction existingAction = run.getAction(ErrorExplanationAction.class);
             if (!forceNew && existingAction != null && existingAction.hasValidExplanation()) {
                 // Return existing explanation with a flag indicating it's cached
-                writeJsonResponse(rsp, createCachedResponse(existingAction.getExplanation()));
+                writeJsonResponse(rsp, "success", existingAction.getProviderName(), createCachedResponse(existingAction.getExplanation()));
                 return;
             }
 
@@ -74,22 +80,16 @@ public class ConsoleExplainErrorAction implements Action {
             String errorText = String.join("\n", logLines);
 
             ErrorExplainer explainer = new ErrorExplainer();
-            String explanation = explainer.explainErrorText(errorText, run);
-
-            if (explanation != null && !explanation.isBlank()) {
-                // Save the explanation as a build action (like the sidebar functionality)
-                ErrorExplanationAction action = new ErrorExplanationAction(explanation, errorText, explainer.getProviderName());
-                run.addOrReplaceAction(action);
-                run.save();
-
-                writeJsonResponse(rsp, explanation);
-            } else {
-                writeJsonResponse(rsp, "Error: Could not generate explanation. Please check your AI API configuration.");
+            try {
+                ErrorExplanationAction action = explainer.explainErrorText(errorText, run);
+                writeJsonResponse(rsp, "success", action.getProviderName(), action.getExplanation());
+            } catch (ExplanationException ee) {
+                writeJsonResponse(rsp, ee.getLevel(), explainer.getProviderName(), ee.getMessage());
             }
         } catch (Exception e) {
             LOGGER.severe("=== EXPLAIN ERROR REQUEST FAILED ===");
             LOGGER.severe("Error explaining console error: " + e.getMessage());
-            writeJsonResponse(rsp, "Error: " + e.getMessage());
+            writeJsonResponse(rsp, "error", "Unkown" , "Error: " + e.getMessage());
         }
     }
 
@@ -159,19 +159,16 @@ public class ConsoleExplainErrorAction implements Action {
         }
     }
 
-    private void writeJsonResponse(StaplerResponse2 rsp, String message) throws IOException {
+    private void writeJsonResponse(StaplerResponse2 rsp, String status, String providerName, String message) throws IOException {
         rsp.setContentType("application/json");
         rsp.setCharacterEncoding("UTF-8");
         PrintWriter writer = rsp.getWriter();
 
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            String jsonResponse = mapper.writeValueAsString(message);
-            writer.write(jsonResponse);
-        } catch (Exception e) {
-            // Fallback to simple JSON string
-            writer.write("\"" + message.replace("\"", "\\\"") + "\"");
-        }
+        JSONObject json = new JSONObject();
+        json.put("status", status);
+        json.put("providerName", providerName);
+        json.put("message", message);
+        writer.write(json.toString());
         writer.flush();
     }
 

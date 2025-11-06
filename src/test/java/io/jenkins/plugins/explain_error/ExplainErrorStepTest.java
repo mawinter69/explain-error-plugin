@@ -33,7 +33,7 @@ class ExplainErrorStepTest {
         WorkflowRun run = jenkins.assertBuildStatus(hudson.model.Result.SUCCESS, job.scheduleBuild2(0));
 
         // Check that the explain error step was called and logged the expected error
-        jenkins.assertLogContains("ERROR: The provider is not properly configured.", run);
+        jenkins.assertLogContains("The provider is not properly configured.", run);
     }
 
     @Test

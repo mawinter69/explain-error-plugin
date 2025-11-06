@@ -39,7 +39,7 @@ class ErrorExplanationActionTest {
 
     @Test
     void testGetDisplayName() {
-        assertEquals("AI Error Explanation (Ollama)", action.getDisplayName());
+        assertEquals("AI Error Explanation", action.getDisplayName());
     }
 
     @Test

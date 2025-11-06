@@ -10,6 +10,7 @@ import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+import io.jenkins.plugins.explain_error.ExplanationException;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -83,29 +84,15 @@ public class GeminiProvider extends BaseAIProvider {
         @POST
         public FormValidation doTestConfiguration(@QueryParameter("apiKey") Secret apiKey,
                                                   @QueryParameter("url") String url,
-                                                  @QueryParameter("model") String model) {
+                                                  @QueryParameter("model") String model) throws ExplanationException {
             Jenkins.get().checkPermission(Jenkins.ADMINISTER);
 
+            GeminiProvider provider = new GeminiProvider(url, model, apiKey);
             try {
-                GeminiProvider provider = new GeminiProvider(url, model, apiKey);
-                String testResponse = provider.explainError("Send 'Configuration test successful' to me.");
-
-                if (testResponse != null && testResponse.contains("Configuration test successful")) {
-                    return FormValidation.ok("Configuration test successful! API connection is working properly.");
-                } else if (testResponse != null && testResponse.contains("AI API Error:")) {
-                    return FormValidation.error("" + testResponse);
-                } else if (testResponse != null && testResponse.contains("Failed to get explanation from AI service")) {
-                    return FormValidation.error("" + testResponse);
-                } else if (testResponse != null && testResponse.contains("Unable to create assistant")) {
-                    return FormValidation.error("" + testResponse);
-                } else {
-                    return FormValidation.error("Connection failed: No valid response received from AI service.");
-                }
-
-            } catch (IOException e) {
-                return FormValidation.error("Connection failed: " + e.getMessage() + ". Please check your API URL and network connection.");
-            } catch (Exception e) {
-                return FormValidation.error("Test failed: " + e.getMessage());
+                provider.explainError("Send 'Configuration test successful' to me.", null);
+                return FormValidation.ok("Configuration test successful! API connection is working properly.");
+            } catch (ExplanationException e) {
+                return FormValidation.error("Configuration test failed: " + e.getMessage(), e);
             }
         }
 

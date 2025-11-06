@@ -11,7 +11,7 @@ public class ErrorExplanationAction implements RunAction2 {
     private final String explanation;
     private final String originalErrorLogs;
     private final long timestamp;
-    private final String providerName;
+    private String providerName = "Unknown";
     private transient Run<?, ?> run;
 
     public ErrorExplanationAction(String explanation, String originalErrorLogs, String providerName) {
@@ -21,6 +21,13 @@ public class ErrorExplanationAction implements RunAction2 {
         this.providerName = providerName;
     }
 
+    public Object readResolve() {
+        if (providerName == null) {
+            providerName = "Unknown";
+        }
+        return this;
+    }
+
     @Override
     public String getIconFileName() {
         return "symbol-cube";
@@ -28,7 +35,7 @@ public class ErrorExplanationAction implements RunAction2 {
 
     @Override
     public String getDisplayName() {
-        return "AI Error Explanation (" + providerName + ")";
+        return "AI Error Explanation";
     }
 
     @Override
@@ -50,6 +57,10 @@ public class ErrorExplanationAction implements RunAction2 {
 
     public String getFormattedTimestamp() {
         return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(timestamp));
+    }
+
+    public String getProviderName() {
+        return providerName;
     }
 
     @Override

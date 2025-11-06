@@ -4,11 +4,11 @@
         <script src="${rootURL}/plugin/explain-error/js/explain-error-footer.js" type="text/javascript"/>
 
         <div id="explain-error-container" class="jenkins-hidden" data-provider-name="${it.providerName}">
-          <l:card title="AI Error Explanation (${it.providerName})">
+          <l:card title="AI Error Explanation">
             <div id="explain-error-spinner" class="jenkins-hidden">
               <l:spinner text="Analyzing error logs..."/>
             </div>
-            <pre id="explain-error-content" class="jenkins-!-margin-bottom-0"></pre>
+            <pre id="explain-error-content" class="jenkins-hidden jenkins-!-margin-bottom-0"></pre>
           </l:card>
         </div>
         
