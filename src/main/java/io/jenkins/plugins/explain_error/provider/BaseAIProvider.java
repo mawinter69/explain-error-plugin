@@ -8,9 +8,7 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.TaskListener;
 import hudson.util.FormValidation;
-import hudson.util.Secret;
 import io.jenkins.plugins.explain_error.ExplanationException;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -18,7 +16,6 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
-import jenkins.model.Jenkins;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.verb.POST;
@@ -51,7 +48,7 @@ public abstract class BaseAIProvider extends AbstractDescribableImpl<BaseAIProvi
      * Explain error logs using the configured AI provider.
      * @param errorLogs the error logs to explain
      * @return the AI explanation
-     * @throws IOException if there's a communication error
+     * @throws ExplanationException if there's a communication error
      */
     public final String explainError(String errorLogs, TaskListener listener) throws ExplanationException {
         Assistant assistant;

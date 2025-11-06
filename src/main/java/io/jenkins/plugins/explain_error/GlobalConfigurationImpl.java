@@ -1,11 +1,6 @@
 package io.jenkins.plugins.explain_error;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
-import hudson.model.Descriptor;
-import hudson.security.Permission;
-import hudson.util.FormValidation;
-import hudson.util.ListBoxModel;
 import hudson.util.Secret;
 import io.jenkins.plugins.explain_error.provider.BaseAIProvider;
 import io.jenkins.plugins.explain_error.provider.GeminiProvider;
@@ -13,15 +8,8 @@ import io.jenkins.plugins.explain_error.provider.OllamaProvider;
 import io.jenkins.plugins.explain_error.provider.OpenAIProvider;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest2;
-import org.kohsuke.stapler.interceptor.RequirePOST;
 import org.jenkinsci.Symbol;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 /**

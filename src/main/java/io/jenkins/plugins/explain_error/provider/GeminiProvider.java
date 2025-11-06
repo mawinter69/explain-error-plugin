@@ -11,7 +11,6 @@ import hudson.model.TaskListener;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
 import io.jenkins.plugins.explain_error.ExplanationException;
-import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
