@@ -2,15 +2,15 @@
 
 ## Project Overview
 
-The Explain Error Plugin is a Jenkins plugin that provides AI-powered explanations for build failures and pipeline errors. It integrates with multiple AI providers (OpenAI, Google Gemini) to analyze error logs and provide human-readable insights to help developers understand and resolve build issues.
+The Explain Error Plugin is a Jenkins plugin that provides AI-powered explanations for build failures and pipeline errors. It integrates with multiple AI providers (OpenAI, Google Gemini, Ollama) to analyze error logs and provide human-readable insights to help developers understand and resolve build issues.
 
 ## Architecture
 
 ### Key Components
 
 - **GlobalConfigurationImpl**: Main plugin configuration class with `@Symbol("explainError")` for Configuration as Code support
-- **BaseAIService**: Abstract base class for AI provider implementations
-- **OpenAIService** / **GeminiService**: Provider-specific AI service implementations
+- **BaseAIProvider**: Abstract base class for AI provider implementations
+- **OpenAIProvider** / **GeminiProvider** / **OllamaProvider**: Provider-specific AI service implementations
 - **ExplainErrorStep**: Pipeline step implementation for `explainError()` function
 - **ConsoleExplainErrorAction**: Adds "Explain Error" button to console output
 - **ErrorExplanationAction**: Build action for storing and displaying AI explanations
@@ -22,14 +22,15 @@ The Explain Error Plugin is a Jenkins plugin that provides AI-powered explanatio
 src/main/java/io/jenkins/plugins/explain_error/
 ├── GlobalConfigurationImpl.java     # Plugin configuration & CasC
 ├── ExplainErrorStep.java            # Pipeline step implementation
-├── BaseAIService.java               # Abstract AI service base
-├── OpenAIService.java               # OpenAI API integration
-├── GeminiService.java               # Google Gemini API integration
-├── AIService.java                   # Service factory
 ├── ErrorExplainer.java              # Core error analysis logic
 ├── ConsoleExplainErrorAction.java   # Console button action
 ├── ConsolePageDecorator.java        # UI button visibility logic
-└── ErrorExplanationAction.java      # Build action for results
+├── ErrorExplanationAction.java      # Build action for results
+└── provider/
+    ├── BaseAIProvider.java           # Abstract AI service
+    ├── OpenAIProvider.java           # OpenAI implementation
+    ├── GeminiProvider.java           # Google Gemini implementation
+    └── OllamaProvider.java           # Ollama implementation
 ```
 
 ## Coding Standards
@@ -44,12 +45,13 @@ src/main/java/io/jenkins/plugins/explain_error/
 ### Jenkins Plugin Patterns
 - Use `@Extension` for Jenkins extension points
 - Use `@Symbol` for Configuration as Code support
-- Use `@RequirePOST` for security-sensitive operations
+- Use `@POST` for security-sensitive operations
 - Follow Jenkins security best practices (permission checks)
 - Use `Secret` class for sensitive configuration data
 
 ### AI Service Integration
-- All AI services extend `BaseAIService`
+- All AI services extend `BaseAIProvider`
+- AI Services use langchain4j if applicable
 - HTTP requests use Java 11's `HttpClient`
 - JSON parsing with Jackson (`ObjectMapper`)
 - Provider-specific request/response formats handled in subclasses
@@ -95,10 +97,11 @@ src/main/java/io/jenkins/plugins/explain_error/
 ```yaml
 unclassified:
   explainError:
-    enableExplanation: true
-    provider: "OPENAI"  # or "GEMINI"
-    apiKey: "${AI_API_KEY}"
-    model: "gpt-3.5-turbo"
+    aiProvider:
+      gemini:
+        apiKey: "${AI_API_KEY}"
+        model: "gpt-5"
+    enableExplanation: true```
 ```
 
 ### Pipeline Usage
@@ -132,20 +135,19 @@ pipeline {
 
 When adding new AI providers:
 
-1. Extend `BaseAIService`
+1. Extend `BaseAIProvder`
 2. Implement abstract methods:
-   - `buildHttpRequest()` - Provider-specific authentication/headers
-   - `buildRequestBody()` - JSON request format
-   - `parseResponse()` - Extract text from JSON response
-3. Add provider to `AIProvider` enum
-4. Update UI dropdowns in global configuration
+   - `createAssistant()` - Provider-specific authentication/headers
+   - `isNotValid()` - JSON request format
+3. Extend `BaseProviderDescriptor`
+4. Implement abstract methods
+   - 'getDefaultModel()' - Return default model name
 5. Add comprehensive tests
 
 ## Security Considerations
 
 - API keys stored using Jenkins `Secret` class
 - All configuration changes require ADMINISTER permission
-- HTTP requests have reasonable timeouts
 - Input validation on all user-provided data
 - No logging of sensitive information (API keys, responses)
 

@@ -1,9 +1,14 @@
 package io.jenkins.plugins.explain_error;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.*;
 
-import hudson.util.FormValidation;
 import hudson.util.Secret;
+import io.jenkins.plugins.explain_error.provider.BaseAIProvider;
+import io.jenkins.plugins.explain_error.provider.GeminiProvider;
+import io.jenkins.plugins.explain_error.provider.OpenAIProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -19,9 +24,7 @@ class GlobalConfigurationImplTest {
         config = GlobalConfigurationImpl.get();
 
         // Reset to clean state for each test (no auto-population)
-        config.setApiKey(null);
-        config.setProvider(AIProvider.OPENAI);
-        config.setModel(null);
+        config.setAiProvider(new OpenAIProvider(null, "test-model", Secret.fromString("test-key")));
         config.setEnableExplanation(true);
     }
 
@@ -37,25 +40,7 @@ class GlobalConfigurationImplTest {
 
     @Test
     void testDefaultValues() {
-        assertNull(config.getModel()); // No auto-population, should be null initially
         assertTrue(config.isEnableExplanation());
-        assertNull(config.getApiKey()); // API key should be null by default in tests
-    }
-
-    @Test
-    void testApiKeySetterAndGetter() {
-        Secret testSecret = Secret.fromString("test-api-key");
-        config.setApiKey(testSecret);
-
-        assertEquals(testSecret, config.getApiKey());
-    }
-
-    @Test
-    void testModelSetterAndGetter() {
-        String testModel = "gpt-4";
-        config.setModel(testModel);
-
-        assertEquals(testModel, config.getModel());
     }
 
     @Test
@@ -68,112 +53,24 @@ class GlobalConfigurationImplTest {
     }
 
     @Test
-    void testDoTestConfiguration() {
-        // Test the doTestConfiguration method with invalid parameters
-        FormValidation result = config.doTestConfiguration("invalid-key", "OPENAI", "invalid-url", "invalid-model");
-
-        // The result should not be null and should have a message
-        assertNotNull(result);
-        assertNotNull(result.getMessage());
-        // We don't strictly enforce error/warning since the implementation may vary
-        assertTrue(result.kind == FormValidation.Kind.ERROR ||
-                  result.kind == FormValidation.Kind.WARNING ||
-                  result.kind == FormValidation.Kind.OK);
-    }
-
-    @Test
-    void testDoTestConfigurationWithNullParameters() {
-        // Test with null parameters
-        FormValidation result = config.doTestConfiguration(null, null, null, null);
-
-        // Should handle null parameters gracefully
-        assertNotNull(result);
-        assertNotNull(result.getMessage());
-    }
-
-    @Test
-    void testDoTestConfigurationWithEmptyParameters() {
-        // Test with empty parameters
-        FormValidation result = config.doTestConfiguration("", "", "", "");
-
-        // Should handle empty parameters gracefully
-        assertNotNull(result);
-        assertNotNull(result.getMessage());
-    }
-
-    @Test
-    void testSetApiKeyWithNullValue() {
-        config.setApiKey(null);
-        assertNull(config.getApiKey());
-    }
-
-    @Test
-    void testSetApiKeyWithEmptySecret() {
-        Secret emptySecret = Secret.fromString("");
-        config.setApiKey(emptySecret);
-        assertEquals(emptySecret, config.getApiKey());
-    }
-
-    @Test
-    void testSetModelWithNullValue() {
-        config.setModel(null);
-        // Raw model should be null
-        assertNull(config.getRawModel());
-        // Model should return null when null (no auto-population)
-        assertNull(config.getModel());
-    }
-
-    @Test
-    void testSetModelWithEmptyString() {
-        config.setModel("");
-        // Raw model should be empty
-        assertEquals("", config.getRawModel());
-        // Model should return empty string when empty (no auto-population)
-        assertEquals("", config.getModel());
-    }
-
-    @Test
     void testConfigurationPersistence() {
         // Set some values
-        config.setApiKey(Secret.fromString("test-key"));
-        config.setProvider(AIProvider.GEMINI);
-        config.setModel("test-model");
+        config.setAiProvider(new GeminiProvider("", "test-model", Secret.fromString("test-key")));
         config.setEnableExplanation(false);
 
         // Save the configuration
         config.save();
 
-        // Verify the values are still there
-        assertEquals("test-key", config.getApiKey().getPlainText());
-        assertEquals(AIProvider.GEMINI, config.getProvider());
-        assertEquals("test-model", config.getModel());
-        assertFalse(config.isEnableExplanation());
-    }
-
-    @Test
-    void testProviderSetterAndGetter() {
-        // Test setting different providers
-        config.setProvider(AIProvider.GEMINI);
-        assertEquals(AIProvider.GEMINI, config.getProvider());
-
-        config.setProvider(AIProvider.OPENAI);
-        assertEquals(AIProvider.OPENAI, config.getProvider());
-
-        // Test null provider defaults to OpenAI
-        config.setProvider(null);
-        assertEquals(AIProvider.OPENAI, config.getProvider());
-    }
-
-    @Test
-    void testProviderPersistence() {
-        // Test that provider setting persists after save/load
-        config.setProvider(AIProvider.GEMINI);
-        config.save();
-        assertEquals(AIProvider.GEMINI, config.getProvider());
-
-        // Simulate reload
         config.load();
-        assertEquals(AIProvider.GEMINI, config.getProvider());
+
+        // Verify the values are still there
+        BaseAIProvider provider = config.getAiProvider();
+        assertThat(provider, instanceOf(GeminiProvider.class));
+        GeminiProvider gemini = (GeminiProvider) provider;
+        assertEquals("test-key", gemini.getApiKey().getPlainText());
+        assertEquals("test-model", gemini.getModel());
+        assertThat(gemini.getUrl(), is(""));
+        assertFalse(config.isEnableExplanation());
     }
 
     @Test
@@ -181,18 +78,5 @@ class GlobalConfigurationImplTest {
         String displayName = config.getDisplayName();
         assertNotNull(displayName);
         assertEquals("Explain Error Plugin Configuration", displayName);
-    }
-
-    @Test
-    void testMultipleConcurrentAccess() {
-        // Test that multiple threads can access the singleton safely
-        GlobalConfigurationImpl config1 = GlobalConfigurationImpl.get();
-        GlobalConfigurationImpl config2 = GlobalConfigurationImpl.get();
-
-        config1.setModel("test-model-1");
-
-        // Both should refer to the same instance
-        assertSame(config1, config2);
-        assertEquals("test-model-1", config2.getModel());
     }
 }

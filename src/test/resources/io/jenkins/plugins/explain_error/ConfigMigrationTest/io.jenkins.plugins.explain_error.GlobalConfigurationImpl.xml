@@ -1,0 +1,7 @@
+<io.jenkins.plugins.explain__error.GlobalConfigurationImpl plugin="explain-error@88.v3109a_f474f50">
+  <apiKey></apiKey>
+  <provider>OLLAMA</provider>
+  <apiUrl>http://localhost:11434</apiUrl>
+  <model>gemma3:1b</model>
+  <enableExplanation>true</enableExplanation>
+</io.jenkins.plugins.explain__error.GlobalConfigurationImpl>

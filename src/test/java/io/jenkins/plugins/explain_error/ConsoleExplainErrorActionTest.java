@@ -4,10 +4,20 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
+import io.jenkins.plugins.explain_error.provider.TestProvider;
+import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.URL;
+import java.util.concurrent.ExecutionException;
+import net.sf.json.JSONObject;
+import org.htmlunit.HttpMethod;
+import org.htmlunit.Page;
+import org.htmlunit.WebRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.jvnet.hudson.test.FailureBuilder;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.SleepBuilder;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 @WithJenkins
@@ -15,10 +25,17 @@ class ConsoleExplainErrorActionTest {
 
     private ConsoleExplainErrorAction action;
     private FreeStyleBuild build;
+    private JenkinsRule rule;
+    private final TestProvider provider = new TestProvider();
+    FreeStyleProject project;
 
     @BeforeEach
     void setUp(JenkinsRule jenkins) throws Exception {
-        FreeStyleProject project = jenkins.createFreeStyleProject("test");
+        this.rule = jenkins;
+        rule.jenkins.setCrumbIssuer(null);
+        GlobalConfigurationImpl config = GlobalConfigurationImpl.get();
+        config.setAiProvider(provider);
+        project = jenkins.createFreeStyleProject("test");
         build = jenkins.buildAndAssertSuccess(project);
         action = new ConsoleExplainErrorAction(build);
     }
@@ -49,11 +66,7 @@ class ConsoleExplainErrorActionTest {
 
     @Test
     void testCreateCachedResponseWithNullInput() throws Exception {
-        // Use reflection to access the private method
-        Method method = ConsoleExplainErrorAction.class.getDeclaredMethod("createCachedResponse", String.class);
-        method.setAccessible(true);
-
-        String cachedResponse = (String) method.invoke(action, (String) null);
+        String cachedResponse = action.createCachedResponse(null);
 
         assertNotNull(cachedResponse);
         assertTrue(cachedResponse.contains("null"));
@@ -62,11 +75,7 @@ class ConsoleExplainErrorActionTest {
 
     @Test
     void testCreateCachedResponseWithEmptyInput() throws Exception {
-        // Use reflection to access the private method
-        Method method = ConsoleExplainErrorAction.class.getDeclaredMethod("createCachedResponse", String.class);
-        method.setAccessible(true);
-
-        String cachedResponse = (String) method.invoke(action, "");
+        String cachedResponse = action.createCachedResponse("");
 
         assertNotNull(cachedResponse);
         assertTrue(cachedResponse.contains("previously generated explanation"));
@@ -74,16 +83,12 @@ class ConsoleExplainErrorActionTest {
 
     @Test
     void testCreateCachedResponseWithLongExplanation() throws Exception {
-        // Use reflection to access the private method
-        Method method = ConsoleExplainErrorAction.class.getDeclaredMethod("createCachedResponse", String.class);
-        method.setAccessible(true);
-
         StringBuilder longExplanation = new StringBuilder();
         for (int i = 0; i < 100; i++) {
             longExplanation.append("This is line ").append(i).append(" of a very long explanation.\n");
         }
 
-        String cachedResponse = (String) method.invoke(action, longExplanation.toString());
+        String cachedResponse = action.createCachedResponse(longExplanation.toString());
 
         assertNotNull(cachedResponse);
         assertTrue(cachedResponse.contains(longExplanation.toString()));
@@ -92,146 +97,12 @@ class ConsoleExplainErrorActionTest {
 
     @Test
     void testCreateCachedResponseWithSpecialCharacters() throws Exception {
-        // Use reflection to access the private method
-        Method method = ConsoleExplainErrorAction.class.getDeclaredMethod("createCachedResponse", String.class);
-        method.setAccessible(true);
-
         String specialExplanation = "Error with special chars: <>&\"'\nUnicode: ñáéíóú 中文 العربية";
-        String cachedResponse = (String) method.invoke(action, specialExplanation);
+        String cachedResponse = action.createCachedResponse(specialExplanation);
 
         assertNotNull(cachedResponse);
         assertTrue(cachedResponse.contains(specialExplanation));
         assertTrue(cachedResponse.contains("previously generated explanation"));
-    }
-
-    @Test
-    void testExistingExplanationDetection() {
-        // Initially no explanation should exist
-        ErrorExplanationAction existingAction = build.getAction(ErrorExplanationAction.class);
-        assertNull(existingAction);
-
-        // Add an explanation
-        ErrorExplanationAction action = new ErrorExplanationAction("Test explanation", "Error logs");
-        build.addAction(action);
-
-        // Now explanation should exist and be valid
-        ErrorExplanationAction retrievedAction = build.getAction(ErrorExplanationAction.class);
-        assertNotNull(retrievedAction);
-        assertTrue(retrievedAction.hasValidExplanation());
-        assertEquals("Test explanation", retrievedAction.getExplanation());
-    }
-
-    @Test
-    void testExistingExplanationDetectionWithInvalidExplanation() {
-        // Add an invalid explanation (null content)
-        ErrorExplanationAction invalidAction = new ErrorExplanationAction(null, "Error logs");
-        build.addAction(invalidAction);
-
-        // Explanation exists but should not be valid
-        ErrorExplanationAction retrievedAction = build.getAction(ErrorExplanationAction.class);
-        assertNotNull(retrievedAction);
-        assertFalse(retrievedAction.hasValidExplanation());
-    }
-
-    @Test
-    void testExistingExplanationDetectionWithEmptyExplanation() {
-        // Add an empty explanation
-        ErrorExplanationAction emptyAction = new ErrorExplanationAction("", "Error logs");
-        build.addAction(emptyAction);
-
-        // Explanation exists but should not be valid
-        ErrorExplanationAction retrievedAction = build.getAction(ErrorExplanationAction.class);
-        assertNotNull(retrievedAction);
-        assertFalse(retrievedAction.hasValidExplanation());
-    }
-
-    @Test
-    void testDoCheckExistingExplanationWithNoExistingAction() throws Exception {
-        // Use reflection to test the JSON logic without Stapler mocking
-        assertNull(build.getAction(ErrorExplanationAction.class));
-
-        // Since no existing action, should return hasExplanation: false
-        // We can't easily test the full HTTP response without complex mocking,
-        // but we can verify the core logic by checking the build state
-        ErrorExplanationAction existingAction = build.getAction(ErrorExplanationAction.class);
-        assertNull(existingAction);
-    }
-
-    @Test
-    void testDoCheckExistingExplanationWithExistingValidAction() throws Exception {
-        // Add an existing explanation action
-        ErrorExplanationAction existingAction = new ErrorExplanationAction("Test explanation", "Test error logs");
-        build.addAction(existingAction);
-
-        // Verify the action was added and is valid
-        ErrorExplanationAction retrievedAction = build.getAction(ErrorExplanationAction.class);
-        assertNotNull(retrievedAction);
-        assertTrue(retrievedAction.hasValidExplanation());
-        assertEquals("Test explanation", retrievedAction.getExplanation());
-        assertNotNull(retrievedAction.getFormattedTimestamp());
-    }
-
-    @Test
-    void testDoCheckExistingExplanationWithExistingInvalidAction() throws Exception {
-        // Add an existing explanation action with invalid explanation (null)
-        ErrorExplanationAction existingAction = new ErrorExplanationAction(null, "Test error logs");
-        build.addAction(existingAction);
-
-        // Verify the action was added but is not valid
-        ErrorExplanationAction retrievedAction = build.getAction(ErrorExplanationAction.class);
-        assertNotNull(retrievedAction);
-        assertFalse(retrievedAction.hasValidExplanation());
-    }
-
-    @Test
-    void testDoCheckExistingExplanationWithEmptyExplanation() throws Exception {
-        // Add an existing explanation action with empty explanation
-        ErrorExplanationAction existingAction = new ErrorExplanationAction("", "Test error logs");
-        build.addAction(existingAction);
-
-        // Verify the action was added but is not valid
-        ErrorExplanationAction retrievedAction = build.getAction(ErrorExplanationAction.class);
-        assertNotNull(retrievedAction);
-        assertFalse(retrievedAction.hasValidExplanation());
-    }
-
-    @Test
-    void testDoCheckExistingExplanationWithWhitespaceOnlyExplanation() throws Exception {
-        // Add an existing explanation action with whitespace-only explanation
-        ErrorExplanationAction existingAction = new ErrorExplanationAction("   \n  \t  ", "Test error logs");
-        build.addAction(existingAction);
-
-        // Verify the action was added but is not valid
-        ErrorExplanationAction retrievedAction = build.getAction(ErrorExplanationAction.class);
-        assertNotNull(retrievedAction);
-        assertFalse(retrievedAction.hasValidExplanation());
-    }
-
-    @Test
-    void testDoCheckExistingExplanationLogic() throws Exception {
-        // Test the core logic that doCheckExistingExplanation uses
-
-        // Case 1: No existing action
-        assertNull(build.getAction(ErrorExplanationAction.class));
-
-        // Case 2: Valid existing action
-        ErrorExplanationAction validAction = new ErrorExplanationAction("Valid explanation", "Error logs");
-        build.addAction(validAction);
-
-        ErrorExplanationAction retrieved = build.getAction(ErrorExplanationAction.class);
-        assertNotNull(retrieved);
-        assertTrue(retrieved.hasValidExplanation());
-
-        // Remove and test invalid cases
-        build.removeAction(validAction);
-
-        // Case 3: Invalid existing action (null explanation)
-        ErrorExplanationAction invalidAction = new ErrorExplanationAction(null, "Error logs");
-        build.addAction(invalidAction);
-
-        retrieved = build.getAction(ErrorExplanationAction.class);
-        assertNotNull(retrieved);
-        assertFalse(retrieved.hasValidExplanation());
     }
 
     @Test
@@ -240,10 +111,121 @@ class ConsoleExplainErrorActionTest {
     }
 
     @Test
-    void testBuildStatusCheck() {
-        // Test that the action can access build status through the run
-        assertNotNull(action.getRun());
-        // Build should not be building since it's completed in setUp
-        assertFalse(action.getRun().isBuilding());
+    void testExplainConsoleError() throws IOException {
+        try (JenkinsRule.WebClient client = rule.createWebClient()) {
+            ErrorExplanationAction action = build.getAction(ErrorExplanationAction.class);
+            assertNull(action);
+            URL url = new URL(rule.jenkins.getRootUrl() + build.getUrl() + "console-explain-error/explainConsoleError");
+            WebRequest request = new WebRequest(url, HttpMethod.POST);
+            client.getPage(request);
+            action = build.getAction(ErrorExplanationAction.class);
+            assertNotNull(action);
+            assertEquals("Request was successful", action.getExplanation());
+        }
+    }
+
+    @Test
+    void testExplainConsoleErrorSecondCall() throws IOException {
+        try (JenkinsRule.WebClient client = rule.createWebClient()) {
+            URL url = new URL(rule.jenkins.getRootUrl() + build.getUrl() + "console-explain-error/explainConsoleError");
+            WebRequest request = new WebRequest(url, HttpMethod.POST);
+            client.getPage(request);
+            ErrorExplanationAction action = build.getAction(ErrorExplanationAction.class);
+            assertNotNull(action);
+            assertEquals("Request was successful", action.getExplanation());
+            provider.setAnswerMessage("Second call");
+            client.getPage(request);
+            assertEquals(1, provider.getCallCount());
+            action = build.getAction(ErrorExplanationAction.class);
+            assertEquals("Request was successful", action.getExplanation());
+        }
+    }
+    @Test
+    void testExplainConsoleErrorSecondCallForceNew() throws IOException {
+        try (JenkinsRule.WebClient client = rule.createWebClient()) {
+            URL url = new URL(rule.jenkins.getRootUrl() + build.getUrl() + "console-explain-error/explainConsoleError");
+            WebRequest request = new WebRequest(url, HttpMethod.POST);
+            client.getPage(request);
+            ErrorExplanationAction action = build.getAction(ErrorExplanationAction.class);
+            assertNotNull(action);
+            assertEquals("Request was successful", action.getExplanation());
+            provider.setAnswerMessage("Second call");
+            request.setRequestParameters(java.util.Collections.singletonList(
+                new org.htmlunit.util.NameValuePair("forceNew", "true")
+            ));
+            client.getPage(request);
+            assertEquals(2, provider.getCallCount());
+            action = build.getAction(ErrorExplanationAction.class);
+            assertEquals("Second call", action.getExplanation());
+        }
+    }
+
+    @Test
+    void testCheckExistingExplanation() throws IOException {
+        try (JenkinsRule.WebClient client = rule.createWebClient()) {
+            URL url = new URL(rule.jenkins.getRootUrl() + build.getUrl() + "console-explain-error/checkExistingExplanation");
+            WebRequest request = new WebRequest(url, HttpMethod.POST);
+            Page page = client.getPage(request);
+            String content = page.getWebResponse().getContentAsString();
+            JSONObject responseJson = JSONObject.fromObject(content);
+            assertFalse(responseJson.getBoolean("hasExplanation"));
+
+            // Add an explanation
+            ErrorExplanationAction action = new ErrorExplanationAction("Test explanation", "Error logs", "Ollama");
+            build.addAction(action);
+
+            page = client.getPage(request);
+            content = page.getWebResponse().getContentAsString();
+            responseJson = JSONObject.fromObject(content);
+            assertTrue(responseJson.getBoolean("hasExplanation"));
+            assertEquals(action.getFormattedTimestamp(), responseJson.getString("timestamp"));
+
+            // Test with invalid explanation null
+            build.addOrReplaceAction(new ErrorExplanationAction(null, "Error logs", "Ollama"));
+            page = client.getPage(request);
+            content = page.getWebResponse().getContentAsString();
+            responseJson = JSONObject.fromObject(content);
+            assertFalse(responseJson.getBoolean("hasExplanation"));
+
+            // Test with invalid explanation blank
+            build.addOrReplaceAction(new ErrorExplanationAction("", "Error logs", "Ollama"));
+            page = client.getPage(request);
+            content = page.getWebResponse().getContentAsString();
+            responseJson = JSONObject.fromObject(content);
+            assertFalse(responseJson.getBoolean("hasExplanation"));
+        }
+    }
+
+    @Test
+    void testCheckBuildStatus() throws IOException, ExecutionException, InterruptedException {
+        try (JenkinsRule.WebClient client = rule.createWebClient()) {
+            URL url = new URL(rule.jenkins.getRootUrl() + build.getUrl() + "console-explain-error/checkBuildStatus");
+            WebRequest request = new WebRequest(url, HttpMethod.POST);
+            Page page = client.getPage(request);
+            String content = page.getWebResponse().getContentAsString();
+            JSONObject responseJson = JSONObject.fromObject(content);
+            assertEquals(0, responseJson.getInt("buildingStatus"));
+
+            // Test build is running
+            project.getBuildersList().add(new SleepBuilder(2000));
+            build = project.scheduleBuild2(0).waitForStart();
+            url = new URL(rule.jenkins.getRootUrl() + build.getUrl() + "console-explain-error/checkBuildStatus");
+            request = new WebRequest(url, HttpMethod.POST);
+            page = client.getPage(request);
+            content = page.getWebResponse().getContentAsString();
+            responseJson = JSONObject.fromObject(content);
+            assertEquals(1, responseJson.getInt("buildingStatus"));
+
+            // Test build failed
+            project.getBuildersList().clear();
+            project.getBuildersList().add(new FailureBuilder());
+            build = project.scheduleBuild2(0).get();
+            url = new URL(rule.jenkins.getRootUrl() + build.getUrl() + "console-explain-error/checkBuildStatus");
+            request = new WebRequest(url, HttpMethod.POST);
+            page = client.getPage(request);
+            content = page.getWebResponse().getContentAsString();
+            responseJson = JSONObject.fromObject(content);
+            assertEquals(2, responseJson.getInt("buildingStatus"));
+        }
     }
 }

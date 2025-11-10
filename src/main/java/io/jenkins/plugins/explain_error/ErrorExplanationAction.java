@@ -11,12 +11,21 @@ public class ErrorExplanationAction implements RunAction2 {
     private final String explanation;
     private final String originalErrorLogs;
     private final long timestamp;
+    private String providerName = "Unknown";
     private transient Run<?, ?> run;
 
-    public ErrorExplanationAction(String explanation, String originalErrorLogs) {
+    public ErrorExplanationAction(String explanation, String originalErrorLogs, String providerName) {
         this.explanation = explanation;
         this.originalErrorLogs = originalErrorLogs;
         this.timestamp = System.currentTimeMillis();
+        this.providerName = providerName;
+    }
+
+    public Object readResolve() {
+        if (providerName == null) {
+            providerName = "Unknown";
+        }
+        return this;
     }
 
     @Override
@@ -50,6 +59,10 @@ public class ErrorExplanationAction implements RunAction2 {
         return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(timestamp));
     }
 
+    public String getProviderName() {
+        return providerName;
+    }
+
     @Override
     public void onAttached(Run<?, ?> r) {
         this.run = r;
@@ -73,6 +86,6 @@ public class ErrorExplanationAction implements RunAction2 {
      * @return true if explanation is not null, not empty, and not just whitespace
      */
     public boolean hasValidExplanation() {
-        return explanation != null && !explanation.trim().isEmpty();
+        return explanation != null && !explanation.isBlank();
     }
 }

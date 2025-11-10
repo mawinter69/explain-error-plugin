@@ -1,11 +1,15 @@
 package io.jenkins.plugins.explain_error;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.TaskListener;
 import hudson.util.Secret;
+import io.jenkins.plugins.explain_error.provider.OpenAIProvider;
+import io.jenkins.plugins.explain_error.provider.TestProvider;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
@@ -38,7 +42,7 @@ class ErrorExplainerTest {
 
         // Test with null API key
         config.setEnableExplanation(true);
-        config.setApiKey(null);
+        config.setAiProvider(new OpenAIProvider(null, "test-model", null));
 
         FreeStyleProject project = jenkins.createFreeStyleProject();
         FreeStyleBuild build = jenkins.buildAndAssertSuccess(project);
@@ -57,37 +61,52 @@ class ErrorExplainerTest {
 
         // Setup valid configuration
         config.setEnableExplanation(true);
-        config.setApiKey(Secret.fromString("test-api-key"));
-        config.setProvider(AIProvider.OPENAI);
-        config.setModel("gpt-3.5-turbo");
+        TestProvider provider = new TestProvider();
+        config.setAiProvider(provider);
 
         FreeStyleProject project = jenkins.createFreeStyleProject();
         FreeStyleBuild build = jenkins.buildAndAssertSuccess(project);
 
         // Test with valid error text (will fail with API but should not throw exception)
         assertDoesNotThrow(() -> {
-            String result = errorExplainer.explainErrorText("Build failed", build);
-            // Result should be a non-empty error message since we're using a fake API key
-            assertNotNull(result);
-            assertFalse(result.isEmpty());
-            // Should contain error message indicating communication failure
-            assertTrue(result.contains("Failed to") || result.contains("ERROR"));
+            ErrorExplanationAction action = errorExplainer.explainErrorText("Build failed", build);
+            assertEquals("Request was successful", action.getExplanation());
         });
 
         // Test with null input
-        assertDoesNotThrow(() -> {
-            String result = errorExplainer.explainErrorText(null, build);
+        ExplanationException e = assertThrows(ExplanationException.class, () -> {
+            errorExplainer.explainErrorText(null, build);
             // Should return error message about no error text provided
-            assertNotNull(result);
-            assertEquals("No error text provided to explain.", result);
         });
+        assertEquals("No error logs provided for explanation.", e.getMessage());
 
         // Test with empty input
-        assertDoesNotThrow(() -> {
-            String result = errorExplainer.explainErrorText("", build);
+        e = assertThrows(ExplanationException.class, () -> {
+            errorExplainer.explainErrorText("", build);
             // Should return error message about no error text provided
-            assertNotNull(result);
-            assertEquals("No error text provided to explain.", result);
         });
+        assertEquals("No error logs provided for explanation.", e.getMessage());
+
+        // Test with whitespace only input
+        e = assertThrows(ExplanationException.class, () -> {
+            errorExplainer.explainErrorText("   ", build);
+            // Should return error message about no error text provided
+        });
+        assertEquals("No error logs provided for explanation.", e.getMessage());
+
+        // Test with invalid config input
+        e = assertThrows(ExplanationException.class, () -> {
+            provider.setApiKey(null);
+            errorExplainer.explainErrorText("Build Failed", build);
+        });
+        assertEquals("The provider is not properly configured.", e.getMessage());
+
+        // Test with request exception config input
+        e = assertThrows(ExplanationException.class, () -> {
+            provider.setApiKey(Secret.fromString("test-key"));
+            provider.setThrowError(true);
+            errorExplainer.explainErrorText("Build failed", build);
+        });
+        assertEquals("API request failed: Request failed.", e.getMessage());
     }
 }

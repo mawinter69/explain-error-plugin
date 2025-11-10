@@ -1,5 +1,6 @@
 package io.jenkins.plugins.explain_error;
 
+import io.jenkins.plugins.explain_error.provider.TestProvider;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -13,6 +14,8 @@ class ExplainErrorStepConfigTest {
     @Test
     void testExplainErrorStepWithParameters(JenkinsRule jenkins) throws Exception {
         // Create a test pipeline job
+        GlobalConfigurationImpl globalConfig = GlobalConfigurationImpl.get();
+        globalConfig.setAiProvider(new TestProvider());
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "test-explain-error-config");
 
         // Define a simple pipeline that uses the step with parameters
