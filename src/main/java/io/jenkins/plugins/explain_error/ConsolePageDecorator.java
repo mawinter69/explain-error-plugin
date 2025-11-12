@@ -33,9 +33,7 @@ public class ConsolePageDecorator extends PageDecorator {
     }
 
     /**
-     * Helper method for JavaScript to check if a build is completed.
-     * Returns true if the plugin is enabled (for JavaScript inclusion),
-     * actual build status check is done in JavaScript.
+     * Helper method used by jelly to checked if we're on a console url.
      */
     public boolean isPluginActive() {
         String uri = Stapler.getCurrentRequest2().getRequestURI();
@@ -52,8 +50,7 @@ public class ConsolePageDecorator extends PageDecorator {
     }
 
     public ErrorExplanationAction getExistingExplanation() {
-        StaplerRequest2 request = Stapler.getCurrentRequest2();
-        Ancestor ancestor = request.findAncestor(Run.class);
+        Ancestor ancestor = Stapler.getCurrentRequest2().findAncestor(Run.class);
         if (ancestor != null && ancestor.getObject() instanceof Run<?, ?> run) {
             return run.getAction(ErrorExplanationAction.class);
         } else {
