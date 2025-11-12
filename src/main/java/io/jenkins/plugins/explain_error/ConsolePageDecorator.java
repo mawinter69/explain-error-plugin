@@ -39,13 +39,12 @@ public class ConsolePageDecorator extends PageDecorator {
      */
     public boolean isPluginActive() {
         String uri = Stapler.getCurrentRequest2().getRequestURI();
-        boolean matches = uri.matches(".*/console(Full)?$");
-        return matches;
+        return uri.matches(".*/console(Full)?$");
     }
 
     public String getRunUrl() {
         Ancestor ancestor = Stapler.getCurrentRequest2().findAncestor(Run.class);
-        if (ancestor.getObject() instanceof Run<?, ?> run) {
+        if (ancestor != null && ancestor.getObject() instanceof Run<?, ?> run) {
             return run.getUrl();
         } else {
             return null;
@@ -55,7 +54,7 @@ public class ConsolePageDecorator extends PageDecorator {
     public ErrorExplanationAction getExistingExplanation() {
         StaplerRequest2 request = Stapler.getCurrentRequest2();
         Ancestor ancestor = request.findAncestor(Run.class);
-        if (ancestor.getObject() instanceof Run<?, ?> run) {
+        if (ancestor != null && ancestor.getObject() instanceof Run<?, ?> run) {
             return run.getAction(ErrorExplanationAction.class);
         } else {
             return null;
