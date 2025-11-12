@@ -2,12 +2,22 @@ package io.jenkins.plugins.explain_error;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import hudson.model.FreeStyleBuild;
+import hudson.model.FreeStyleProject;
 import hudson.util.Secret;
 import io.jenkins.plugins.explain_error.provider.TestProvider;
+import org.htmlunit.HttpMethod;
+import org.htmlunit.Page;
+import org.htmlunit.WebRequest;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
+
+import java.net.URL;
 
 @WithJenkins
 class ConsolePageDecoratorTest {
@@ -15,9 +25,13 @@ class ConsolePageDecoratorTest {
     private ConsolePageDecorator decorator;
     private GlobalConfigurationImpl config;
     private TestProvider provider;
+    private JenkinsRule rule;
+
 
     @BeforeEach
     void setUp(JenkinsRule jenkins) {
+        rule = jenkins;
+        rule.jenkins.setCrumbIssuer(null);
         decorator = new ConsolePageDecorator();
         config = GlobalConfigurationImpl.get();
 
@@ -27,10 +41,6 @@ class ConsolePageDecoratorTest {
         config.setAiProvider(provider);
     }
 
-    @Test
-    void testDecoratorCreation() {
-        assertNotNull(decorator);
-    }
 
     @Test
     void testIsExplainErrorEnabledWithValidConfig() {
@@ -137,15 +147,96 @@ class ConsolePageDecoratorTest {
     }
 
     @Test
-    void testIsPluginActive() {
-        // isPluginActive should return the same as isExplainErrorEnabled
-        assertEquals(decorator.isExplainErrorEnabled(), decorator.isPluginActive());
+    void testContainerIsInjectedWhenEnabled() throws Exception {
+        FreeStyleProject project = rule.createFreeStyleProject("test");
+        FreeStyleBuild build = rule.buildAndAssertSuccess(project);
 
+        try (JenkinsRule.WebClient client = rule.createWebClient()) {
+            URL url = url = new URL(rule.jenkins.getRootUrl() + build.getUrl() + "console");
+            WebRequest request = new WebRequest(url, HttpMethod.POST);
+            Page page = client.getPage(request);
+            String content = page.getWebResponse().getContentAsString();
+            assertTrue(content.contains("explain-error-container"));
+
+            // Test consoleFull Url
+            url = new URL(rule.jenkins.getRootUrl() + build.getUrl() + "consoleFull");
+            request = new WebRequest(url, HttpMethod.POST);
+            page = client.getPage(request);
+            content = page.getWebResponse().getContentAsString();
+            assertTrue(content.contains("explain-error-container"));
+        }
+    }
+
+    @Test
+    void testContainerIsInjectedWithExistingExplanationWhenDisabled() throws Exception {
+        FreeStyleProject project = rule.createFreeStyleProject("test");
+        FreeStyleBuild build = rule.buildAndAssertSuccess(project);
+        build.addAction(new ErrorExplanationAction("This is a test explanation of the error", "ERROR: Build failed\nFinished: FAILURE", "Ollama" ));
+        build.save();
         config.setEnableExplanation(false);
-        assertEquals(decorator.isExplainErrorEnabled(), decorator.isPluginActive());
 
-        config.setEnableExplanation(true);
-        config.setApiKey(null);
-        assertEquals(decorator.isExplainErrorEnabled(), decorator.isPluginActive());
+        try (JenkinsRule.WebClient client = rule.createWebClient()) {
+            URL url = url = new URL(rule.jenkins.getRootUrl() + build.getUrl() + "console");
+            WebRequest request = new WebRequest(url, HttpMethod.POST);
+            Page page = client.getPage(request);
+            String content = page.getWebResponse().getContentAsString();
+
+            // Parse content as HTML and get element by id "explain-error-content"
+            Document doc = Jsoup.parse(content);
+            Element explainContent = doc.getElementById("explain-error-content");
+            assertNotNull(explainContent, "Element with id 'explain-error-content' should exist");
+            assertTrue(explainContent.text().contains("This is a test explanation of the error"));
+
+        }
+    }
+
+    @Test
+    void testContainerIsNotInjectedWhenDisabled() throws Exception {
+        config.setEnableExplanation(false);
+        FreeStyleProject project = rule.createFreeStyleProject("test");
+        FreeStyleBuild build = rule.buildAndAssertSuccess(project);
+
+        try (JenkinsRule.WebClient client = rule.createWebClient()) {
+            URL url = url = new URL(rule.jenkins.getRootUrl() + build.getUrl() + "console");
+            WebRequest request = new WebRequest(url, HttpMethod.POST);
+            Page page = client.getPage(request);
+            String content = page.getWebResponse().getContentAsString();
+            assertFalse(content.contains("explain-error-container"));
+
+            // Test consoleFull Url
+            url = new URL(rule.jenkins.getRootUrl() + build.getUrl() + "consoleFull");
+            request = new WebRequest(url, HttpMethod.POST);
+            page = client.getPage(request);
+            content = page.getWebResponse().getContentAsString();
+            assertFalse(content.contains("explain-error-container"));
+        }
+    }
+
+    @Test
+    void testContainerIsNotInjectedOnOtherPages() throws Exception {
+        FreeStyleProject project = rule.createFreeStyleProject("test");
+        FreeStyleBuild build = rule.buildAndAssertSuccess(project);
+
+        try (JenkinsRule.WebClient client = rule.createWebClient()) {
+            URL url = url = new URL(rule.jenkins.getRootUrl() + build.getUrl());
+            WebRequest request = new WebRequest(url, HttpMethod.POST);
+            Page page = client.getPage(request);
+            String content = page.getWebResponse().getContentAsString();
+            assertFalse(content.contains("explain-error-container"));
+
+            // Test project Url
+            url = new URL(rule.jenkins.getRootUrl() + project.getUrl());
+            request = new WebRequest(url, HttpMethod.POST);
+            page = client.getPage(request);
+            content = page.getWebResponse().getContentAsString();
+            assertFalse(content.contains("explain-error-container"));
+
+            // Test Jenkins root Url
+            url = new URL(rule.jenkins.getRootUrl());
+            request = new WebRequest(url, HttpMethod.POST);
+            page = client.getPage(request);
+            content = page.getWebResponse().getContentAsString();
+            assertFalse(content.contains("explain-error-container"));
+        }
     }
 }

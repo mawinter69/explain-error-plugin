@@ -1,34 +1,31 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:l="/lib/layout">
-    <j:if test="${it.pluginActive}">
+    <j:set var="active" value="${it.pluginActive}" />
+    <j:if test="${active}">
+      <j:set var="enabled" value="${it.explainErrorEnabled}" />
+      <j:set var="existingExplanation" value="${it.existingExplanation}" />
+      <j:set var="hasExplanation" value="${existingExplanation != null}" />
+      <j:if test="${enabled or hasExplanation}">
         <script src="${rootURL}/plugin/explain-error/js/explain-error-footer.js" type="text/javascript"/>
-
-        <div id="explain-error-container" class="jenkins-hidden" data-provider-name="${it.providerName}">
-          <l:card title="AI Error Explanation">
+        <j:set var="controls">
+          <j:if test="${enabled}">
+            <a href="#" tooltip="${%reexplain(it.providerName)}" class="jenkins-card__reveal eep-generate-new-button">
+              <l:icon src="symbol-reload" />
+            </a>
+          </j:if>
+          <a href="#" tooltip="${%Close}" class="jenkins-card__reveal eep-close-button">
+            <l:icon src="symbol-close" />
+          </a>
+        </j:set>
+        <div id="explain-error-container" class="jenkins-hidden" data-run-url="${it.runUrl}" data-provider-name="${it.providerName}"
+             data-has-explanation="${hasExplanation}" data-plugin-enabled="${enabled}">
+          <l:card title="AI Error Explanation ${hasExplanation?'(' + existingExplanation.providerName + ')' : ''}" controls="${controls}">
             <div id="explain-error-spinner" class="jenkins-hidden">
               <l:spinner text="Analyzing error logs..."/>
             </div>
-            <pre id="explain-error-content" class="jenkins-hidden jenkins-!-margin-bottom-0"></pre>
+            <pre id="explain-error-content" class="jenkins-!-margin-bottom-0 ${hasExplanation?'':'jenkins-hidden'}">${hasExplanation ? existingExplanation.explanation : ''}</pre>
           </l:card>
         </div>
-        
-        <!-- Confirmation Dialog for existing explanation -->
-        <div id="explain-error-confirm-dialog" class="jenkins-hidden">
-          <l:card title="AI Error Explanation Exists">
-            <p>An AI explanation was already generated on <span id="existing-explanation-timestamp"></span>.</p>
-            <p>Do you want to view the existing explanation or generate a new one?</p>
-            <div class="jenkins-button-bar">
-              <button type="button" class="jenkins-button jenkins-button--primary jenkins-!-margin-1 eep-view-existing-button">
-                View Existing
-              </button>
-              <button type="button" class="jenkins-button jenkins-!-margin-1 eep-generate-new-button" tooltip="Provider: ${it.providerName}">
-                Generate New
-              </button>
-              <button type="button" class="jenkins-button jenkins-!-margin-1 eep-cancel-button">
-                Cancel
-              </button>
-            </div>
-          </l:card>
-        </div>
+      </j:if>
     </j:if>
 </j:jelly>

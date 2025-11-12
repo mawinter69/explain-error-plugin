@@ -94,39 +94,6 @@ public class ConsoleExplainErrorAction implements Action {
     }
 
     /**
-     * AJAX endpoint to check if an explanation already exists.
-     * Returns JSON with hasExplanation boolean and timestamp if it exists.
-     */
-    @RequirePOST
-    public void doCheckExistingExplanation(StaplerRequest2 req, StaplerResponse2 rsp) throws ServletException, IOException {
-        try {
-            run.checkPermission(hudson.model.Item.READ);
-
-            ErrorExplanationAction existingAction = run.getAction(ErrorExplanationAction.class);
-            boolean hasExplanation = existingAction != null && existingAction.hasValidExplanation();
-
-            rsp.setContentType("application/json");
-            rsp.setCharacterEncoding("UTF-8");
-            PrintWriter writer = rsp.getWriter();
-
-            if (hasExplanation) {
-                String response = String.format(
-                    "{\"hasExplanation\": true, \"timestamp\": \"%s\"}",
-                    existingAction.getFormattedTimestamp()
-                );
-                writer.write(response);
-            } else {
-                writer.write("{\"hasExplanation\": false}");
-            }
-
-            writer.flush();
-        } catch (Exception e) {
-            LOGGER.severe("Error checking existing explanation: " + e.getMessage());
-            rsp.setStatus(500);
-        }
-    }
-
-    /**
      * AJAX endpoint to check build status.
      * Returns JSON with buildingStatus to determine if button should be shown. 0 - SUCCESS, 1 - RUNNING, 2 - FINISHED and FAILURE
      */

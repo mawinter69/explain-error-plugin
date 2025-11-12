@@ -2,6 +2,10 @@ package io.jenkins.plugins.explain_error;
 
 import hudson.Extension;
 import hudson.model.PageDecorator;
+import hudson.model.Run;
+import org.kohsuke.stapler.Ancestor;
+import org.kohsuke.stapler.Stapler;
+import org.kohsuke.stapler.StaplerRequest2;
 
 /**
  * Page decorator to add "Explain Error" functionality to console output pages.
@@ -27,12 +31,34 @@ public class ConsolePageDecorator extends PageDecorator {
     public String getProviderName() {
         return GlobalConfigurationImpl.get().getAiProvider().getProviderName();
     }
+
     /**
      * Helper method for JavaScript to check if a build is completed.
      * Returns true if the plugin is enabled (for JavaScript inclusion),
      * actual build status check is done in JavaScript.
      */
     public boolean isPluginActive() {
-        return isExplainErrorEnabled();
+        String uri = Stapler.getCurrentRequest2().getRequestURI();
+        boolean matches = uri.matches(".*/console(Full)?$");
+        return matches;
+    }
+
+    public String getRunUrl() {
+        Ancestor ancestor = Stapler.getCurrentRequest2().findAncestor(Run.class);
+        if (ancestor.getObject() instanceof Run<?, ?> run) {
+            return run.getUrl();
+        } else {
+            return null;
+        }
+    }
+
+    public ErrorExplanationAction getExistingExplanation() {
+        StaplerRequest2 request = Stapler.getCurrentRequest2();
+        Ancestor ancestor = request.findAncestor(Run.class);
+        if (ancestor.getObject() instanceof Run<?, ?> run) {
+            return run.getAction(ErrorExplanationAction.class);
+        } else {
+            return null;
+        }
     }
 }

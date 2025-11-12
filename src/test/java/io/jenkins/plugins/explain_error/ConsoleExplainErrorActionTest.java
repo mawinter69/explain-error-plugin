@@ -161,42 +161,6 @@ class ConsoleExplainErrorActionTest {
     }
 
     @Test
-    void testCheckExistingExplanation() throws IOException {
-        try (JenkinsRule.WebClient client = rule.createWebClient()) {
-            URL url = new URL(rule.jenkins.getRootUrl() + build.getUrl() + "console-explain-error/checkExistingExplanation");
-            WebRequest request = new WebRequest(url, HttpMethod.POST);
-            Page page = client.getPage(request);
-            String content = page.getWebResponse().getContentAsString();
-            JSONObject responseJson = JSONObject.fromObject(content);
-            assertFalse(responseJson.getBoolean("hasExplanation"));
-
-            // Add an explanation
-            ErrorExplanationAction action = new ErrorExplanationAction("Test explanation", "Error logs", "Ollama");
-            build.addAction(action);
-
-            page = client.getPage(request);
-            content = page.getWebResponse().getContentAsString();
-            responseJson = JSONObject.fromObject(content);
-            assertTrue(responseJson.getBoolean("hasExplanation"));
-            assertEquals(action.getFormattedTimestamp(), responseJson.getString("timestamp"));
-
-            // Test with invalid explanation null
-            build.addOrReplaceAction(new ErrorExplanationAction(null, "Error logs", "Ollama"));
-            page = client.getPage(request);
-            content = page.getWebResponse().getContentAsString();
-            responseJson = JSONObject.fromObject(content);
-            assertFalse(responseJson.getBoolean("hasExplanation"));
-
-            // Test with invalid explanation blank
-            build.addOrReplaceAction(new ErrorExplanationAction("", "Error logs", "Ollama"));
-            page = client.getPage(request);
-            content = page.getWebResponse().getContentAsString();
-            responseJson = JSONObject.fromObject(content);
-            assertFalse(responseJson.getBoolean("hasExplanation"));
-        }
-    }
-
-    @Test
     void testCheckBuildStatus() throws IOException, ExecutionException, InterruptedException {
         try (JenkinsRule.WebClient client = rule.createWebClient()) {
             URL url = new URL(rule.jenkins.getRootUrl() + build.getUrl() + "console-explain-error/checkBuildStatus");
